@@ -10,10 +10,31 @@ if (typeof window !== "undefined") {
   throw new Error("Firebase Admin SDK must only be invoked in a Node.js server environment.");
 }
 
-const adminProjectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
-const adminClientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL || "";
-const rawPrivateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY || "";
-const adminPrivateKey = rawPrivateKey ? rawPrivateKey.replace(/\\n/g, "\n") : "";
+const adminProjectId =
+  process.env.FIREBASE_ADMIN_PROJECT_ID ||
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+  "";
+const adminClientEmail =
+  process.env.FIREBASE_ADMIN_CLIENT_EMAIL ||
+  process.env.FIREBASE_CLIENT_EMAIL ||
+  "";
+
+function formatPrivateKey(key: string | undefined): string {
+  if (!key) return "";
+  let cleanKey = key.trim();
+  // Strip outer quotes if wrapped like "..." or '...'
+  if (
+    (cleanKey.startsWith('"') && cleanKey.endsWith('"')) ||
+    (cleanKey.startsWith("'") && cleanKey.endsWith("'"))
+  ) {
+    cleanKey = cleanKey.slice(1, -1);
+  }
+  // Replace literal '\n' sequences with real newlines
+  cleanKey = cleanKey.replace(/\\n/g, "\n");
+  return cleanKey;
+}
+
+const adminPrivateKey = formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY);
 
 export const isAdminConfigured = Boolean(
   adminProjectId && adminClientEmail && adminPrivateKey

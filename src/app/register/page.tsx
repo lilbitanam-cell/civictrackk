@@ -42,15 +42,34 @@ export default function RegisterPage() {
   const [authError, setAuthError] = React.useState<string | null>(null);
 
   const completeSessionAndRedirect = async (idToken: string) => {
-    const res = await fetch("/api/auth/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+    } catch (networkErr: unknown) {
+      throw new Error("Unable to connect to authentication server. Please check your network connection.");
+    }
 
-    const data = await res.json();
+    const text = await res.text();
+    let data: any = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // If the server returns HTML (e.g. 500 error page, 504 gateway timeout, or Vercel function crash)
+        throw new Error(
+          res.ok
+            ? "Authentication server returned an unparseable response."
+            : `Authentication failed (HTTP ${res.status}): Server configuration or environment variable issue.`
+        );
+      }
+    }
+
     if (!res.ok) {
-      throw new Error(data.error || "Failed to establish server session.");
+      throw new Error(data.error || `Failed to establish server session (HTTP ${res.status}).`);
     }
 
     router.push(data.redirectTo || "/citizen/dashboard");
@@ -112,28 +131,12 @@ export default function RegisterPage() {
       // 2. Set Firebase Auth display name
       await updateProfile(user, { displayName: formData.fullName.trim() });
 
-      // 3. Send ID token to server session route.
-      // The server will create the Firestore user document via Admin SDK
-      // (bypasses client security rules) and set the 'citizen' custom claim.
-      // We then force-refresh the token so the new claim is embedded before
-      // any client-side Firestore requests are made.
+      // 3. Establish server session via Admin SDK & set citizen claims
       const idToken = await user.getIdToken();
-      const res = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to establish server session.");
-      }
+      await completeSessionAndRedirect(idToken);
 
       // Force token refresh so custom claims (role=citizen) are live on client
       await user.getIdToken(true);
-
-      router.push(data.redirectTo || "/citizen/dashboard");
-      router.refresh();
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code || "";
       const message = (err as { message?: string })?.message;

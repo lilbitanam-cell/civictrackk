@@ -37,15 +37,33 @@ export default function LoginPage() {
 
   // Handle establish session on server and redirect
   const completeSessionAndRedirect = async (idToken: string) => {
-    const res = await fetch("/api/auth/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+    } catch {
+      throw new Error("Unable to connect to authentication server. Please check your network connection.");
+    }
 
-    const data = await res.json();
+    const text = await res.text();
+    let data: any = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Authentication server returned an unparseable response."
+            : `Authentication failed (HTTP ${res.status}): Server configuration issue.`
+        );
+      }
+    }
+
     if (!res.ok) {
-      throw new Error(data.error || "Failed to establish server session.");
+      throw new Error(data.error || `Failed to establish server session (HTTP ${res.status}).`);
     }
 
     // Force-refresh token so the latest custom claims (role) are embedded
