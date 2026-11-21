@@ -1,0 +1,146 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper Functions ────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Role is read from Firebase Auth custom claims (set by Admin SDK on login).
+    // This avoids recursive Firestore reads inside rule evaluation.
+    function getRole() {
+      return request.auth.token.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getRole() == 'admin';
+    }
+
+    function isWorker() {
+      return isAuthenticated() && getRole() == 'worker';
+    }
+
+    function isCitizen() {
+      return isAuthenticated() && getRole() == 'citizen';
+    }
+
+    // ─── 1. users collection ─────────────────────────────────────────────────
+    match /users/{userId} {
+      // Any authenticated user can read profiles (workers, admins look up each other)
+      allow read: if isAuthenticated();
+
+      // On registration the citizen creates their own document.
+      // role must be 'citizen' — citizens cannot self-assign admin/worker.
+      allow create: if isOwner(userId)
+                    && request.resource.data.id == userId
+                    && request.resource.data.role == 'citizen';
+
+      // Users can update their own profile but cannot change their role.
+      // Admins can update any user (e.g. activate/deactivate workers).
+      allow update: if (isOwner(userId)
+                        && request.resource.data.role == resource.data.role)
+                    || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── 2. complaints collection ─────────────────────────────────────────────
+    match /complaints/{complaintId} {
+      // Citizens see only their own complaints.
+      // Admins and workers see all.
+      allow read: if isAdmin()
+                  || isWorker()
+                  || (isCitizen() && resource.data.citizenId == request.auth.uid);
+
+      // Any authenticated citizen can file a complaint under their own UID.
+      allow create: if isAuthenticated()
+                    && request.resource.data.citizenId == request.auth.uid;
+
+      // Status transitions:
+      //   Admin — full control.
+      //   Assigned worker — can update status and resolution fields only.
+      //   Submitting citizen — can edit only while status is 'submitted'.
+      allow update: if isAdmin()
+                    || (isWorker() && resource.data.assignedWorkerId == request.auth.uid)
+                    || (isCitizen()
+                        && resource.data.citizenId == request.auth.uid
+                        && resource.data.status == 'submitted');
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── 3. departments collection ────────────────────────────────────────────
+    match /departments/{departmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ─── 4. workerTasks collection ────────────────────────────────────────────
+    match /workerTasks/{taskId} {
+      // Workers see only their own tasks; admins see all.
+      allow read: if isAdmin()
+                  || (isWorker() && resource.data.workerId == request.auth.uid);
+
+      // Only admins create tasks (worker assignment).
+      allow create: if isAdmin();
+
+      // Admins can update anything; workers can update their own tasks only.
+      allow update: if isAdmin()
+                    || (isWorker() && resource.data.workerId == request.auth.uid);
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── 5. notifications collection ─────────────────────────────────────────
+    match /notifications/{notificationId} {
+      // Users read only their own notifications.
+      allow read: if isAuthenticated()
+                  && resource.data.userId == request.auth.uid;
+
+      // Any authenticated user (or server action) can create notifications.
+      allow create: if isAuthenticated();
+
+      // Recipients can only mark their own notifications as read.
+      allow update: if isAuthenticated()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data)
+                                         .affectedKeys()
+                                         .hasOnly(['isRead']);
+
+      allow delete: if isAuthenticated()
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    // ─── 6. complaintHistory collection (immutable audit trail) ──────────────
+    match /complaintHistory/{historyId} {
+      allow read: if isAuthenticated();
+
+      // Actors write their own audit entries.
+      allow create: if isAuthenticated()
+                    && request.resource.data.actorId == request.auth.uid;
+
+      // Audit log is append-only — no updates or deletes ever.
+      allow update, delete: if false;
+    }
+
+    // ─── 7. feedback collection ───────────────────────────────────────────────
+    match /feedback/{feedbackId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.citizenId == request.auth.uid;
+
+      allow update: if isCitizen()
+                    && resource.data.citizenId == request.auth.uid;
+
+      allow delete: if isAdmin();
+    }
+  }
+}

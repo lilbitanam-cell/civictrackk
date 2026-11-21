@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    function isWithinSizeLimit() {
+      return request.resource.size <= 5 * 1024 * 1024; // 5MB limit
+    }
+
+    // 1. Citizen complaint photographs
+    match /complaints/{complaintId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImage() && isWithinSizeLimit();
+      allow delete: if isAuthenticated();
+    }
+
+    // 2. Field worker completion evidence
+    match /tasks/{taskId}/evidence/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImage() && isWithinSizeLimit();
+      allow delete: if isAuthenticated();
+    }
+
+    // 3. User profile photographs
+    match /profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.auth.uid == userId
+                   && isImage()
+                   && isWithinSizeLimit();
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}

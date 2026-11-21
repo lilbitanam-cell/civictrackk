@@ -1,0 +1,43 @@
+import { NextResponse } from "next/server";
+import { isClientFirebaseConfigured, firebaseConfig } from "@/lib/firebase/config";
+import { isAdminConfigured } from "@/lib/firebase/admin";
+
+export async function GET(request: Request) {
+  // Accessing request properties ensures dynamic request-time evaluation
+  const url = new URL(request.url);
+
+  const clientMissing = [
+    !firebaseConfig.apiKey && "NEXT_PUBLIC_FIREBASE_API_KEY",
+    !firebaseConfig.authDomain && "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+    !firebaseConfig.projectId && "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+    !firebaseConfig.storageBucket && "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+    !firebaseConfig.messagingSenderId && "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+    !firebaseConfig.appId && "NEXT_PUBLIC_FIREBASE_APP_ID",
+  ].filter(Boolean) as string[];
+
+  const adminMissing = [
+    !process.env.FIREBASE_ADMIN_PROJECT_ID && "FIREBASE_ADMIN_PROJECT_ID",
+    !process.env.FIREBASE_ADMIN_CLIENT_EMAIL && "FIREBASE_ADMIN_CLIENT_EMAIL",
+    !process.env.FIREBASE_ADMIN_PRIVATE_KEY && "FIREBASE_ADMIN_PRIVATE_KEY",
+  ].filter(Boolean) as string[];
+
+  const isClientReady = isClientFirebaseConfigured;
+  const isAdminReady = isAdminConfigured;
+  const isFullyConfigured = isClientReady && isAdminReady;
+
+  return NextResponse.json({
+    status: isFullyConfigured ? "ready" : "configuration_pending",
+    client: {
+      ready: isClientReady,
+      missing: clientMissing,
+    },
+    admin: {
+      ready: isAdminReady,
+      missing: adminMissing,
+    },
+    message: isFullyConfigured
+      ? "Firebase Client and Admin SDKs are properly configured."
+      : "Firebase environment variables are pending configuration in .env.local.",
+    path: url.pathname,
+  });
+}
