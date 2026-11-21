@@ -47,27 +47,52 @@ export async function POST(request: Request) {
     // 1. Live Firebase ID Token Verification
     if (idToken) {
       if (!isAdminConfigured) {
+        console.error("Firebase Admin SDK is missing server credentials (FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY)");
         return NextResponse.json(
           {
             error:
-              "Firebase Admin SDK is not configured on the server. Please populate FIREBASE_ADMIN_* keys in .env.local.",
+              "Firebase Admin credentials are not configured on the server. Please check your Vercel Environment Variables.",
           },
           { status: 500 }
         );
       }
 
-      const adminAuth = getAdminAuth();
-      const adminDb = getAdminDb();
+      let adminAuth;
+      let adminDb;
+      try {
+        adminAuth = getAdminAuth();
+        adminDb = getAdminDb();
+      } catch (initErr: unknown) {
+        console.error("Failed to initialize Firebase Admin SDK:", initErr);
+        const msg = initErr instanceof Error ? initErr.message : "Firebase Admin initialization error.";
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
 
       // Verify ID token cryptographically
-      const decodedToken = await adminAuth.verifyIdToken(idToken);
+      let decodedToken;
+      try {
+        decodedToken = await adminAuth.verifyIdToken(idToken);
+      } catch (verifyErr: unknown) {
+        console.error("Firebase verifyIdToken error:", verifyErr);
+        const msg = verifyErr instanceof Error ? verifyErr.message : "Invalid or expired Firebase ID token.";
+        return NextResponse.json({ error: msg }, { status: 401 });
+      }
+
       const uid = decodedToken.uid;
       const email = decodedToken.email || null;
       const displayName = decodedToken.name || null;
 
       // Fetch user profile from Firestore using Admin privileges
-      const userDocRef = adminDb.collection("users").doc(uid);
-      const userSnap = await userDocRef.get();
+      let userDocRef;
+      let userSnap;
+      try {
+        userDocRef = adminDb.collection("users").doc(uid);
+        userSnap = await userDocRef.get();
+      } catch (dbErr: unknown) {
+        console.error("Firestore error while reading user profile:", dbErr);
+        const msg = dbErr instanceof Error ? dbErr.message : "Database error while reading user profile.";
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
 
       let role: UserRole = "citizen";
       let departmentId: string | undefined;
@@ -76,15 +101,21 @@ export async function POST(request: Request) {
       if (!userSnap.exists) {
         // First-time public/Google signup: ALWAYS assign role 'citizen'
         const now = new Date();
-        await userDocRef.set({
-          id: uid,
-          email: email || "",
-          displayName: displayName || "Citizen Resident",
-          role: "citizen",
-          isActive: true,
-          createdAt: now,
-          updatedAt: now,
-        });
+        try {
+          await userDocRef.set({
+            id: uid,
+            email: email || "",
+            displayName: displayName || "Citizen Resident",
+            role: "citizen",
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+        } catch (setErr: unknown) {
+          console.error("Firestore user creation error:", setErr);
+          const msg = setErr instanceof Error ? setErr.message : "Database error creating user profile.";
+          return NextResponse.json({ error: msg }, { status: 500 });
+        }
         role = "citizen";
       } else {
         const userData = userSnap.data();
@@ -106,7 +137,11 @@ export async function POST(request: Request) {
 
       // Sync custom claims
       if (decodedToken.role !== role) {
-        await adminAuth.setCustomUserClaims(uid, { role });
+        try {
+          await adminAuth.setCustomUserClaims(uid, { role });
+        } catch (claimErr: unknown) {
+          console.warn("Failed to set custom claim (non-fatal):", claimErr);
+        }
       }
 
       const now = Date.now();

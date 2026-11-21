@@ -10,16 +10,30 @@ if (typeof window !== "undefined") {
   throw new Error("Firebase Admin SDK must only be invoked in a Node.js server environment.");
 }
 
-const adminProjectId =
-  process.env.FIREBASE_ADMIN_PROJECT_ID ||
-  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-  "";
-const adminClientEmail =
-  process.env.FIREBASE_ADMIN_CLIENT_EMAIL ||
-  process.env.FIREBASE_CLIENT_EMAIL ||
-  "";
+export function getAdminCredentials() {
+  const projectId =
+    process.env.FIREBASE_ADMIN_PROJECT_ID ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+    "";
+  const clientEmail =
+    process.env.FIREBASE_ADMIN_CLIENT_EMAIL ||
+    process.env.FIREBASE_CLIENT_EMAIL ||
+    "";
+  const rawKey =
+    process.env.FIREBASE_ADMIN_PRIVATE_KEY ||
+    process.env.FIREBASE_PRIVATE_KEY ||
+    "";
+  const privateKey = formatPrivateKey(rawKey);
 
-function formatPrivateKey(key: string | undefined): string {
+  return {
+    projectId,
+    clientEmail,
+    privateKey,
+    isConfigured: Boolean(projectId && clientEmail && privateKey),
+  };
+}
+
+export function formatPrivateKey(key: string | undefined): string {
   if (!key) return "";
   let cleanKey = key.trim();
   // Strip outer quotes if wrapped like "..." or '...'
@@ -34,10 +48,10 @@ function formatPrivateKey(key: string | undefined): string {
   return cleanKey;
 }
 
-const adminPrivateKey = formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY);
-
 export const isAdminConfigured = Boolean(
-  adminProjectId && adminClientEmail && adminPrivateKey
+  (process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) &&
+  (process.env.FIREBASE_ADMIN_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL) &&
+  (process.env.FIREBASE_ADMIN_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY)
 );
 
 let adminApp: App | undefined;
@@ -53,7 +67,8 @@ export function getAdminApp(): App {
     return adminApp;
   }
 
-  if (!isAdminConfigured) {
+  const creds = getAdminCredentials();
+  if (!creds.isConfigured) {
     throw new Error(
       "Firebase Admin SDK credentials are not configured. Provide FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY in your server environment."
     );
@@ -61,9 +76,9 @@ export function getAdminApp(): App {
 
   adminApp = initializeApp({
     credential: cert({
-      projectId: adminProjectId,
-      clientEmail: adminClientEmail,
-      privateKey: adminPrivateKey,
+      projectId: creds.projectId,
+      clientEmail: creds.clientEmail,
+      privateKey: creds.privateKey,
     }),
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || undefined,
   });
