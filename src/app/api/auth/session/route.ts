@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getAdminAuth, getAdminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminAuth, getAdminDb, getAdminCredentials } from "@/lib/firebase/admin";
 import {
   signSessionToken,
   getCurrentSession,
@@ -46,12 +46,31 @@ export async function POST(request: Request) {
 
     // 1. Live Firebase ID Token Verification
     if (idToken) {
-      if (!isAdminConfigured) {
-        console.error("Firebase Admin SDK is missing server credentials (FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY)");
+      const adminCreds = getAdminCredentials();
+      console.log("[Auth Session] ID Token received. Checking Admin credentials...", {
+        hasProjectId: Boolean(adminCreds.projectId),
+        hasClientEmail: Boolean(adminCreds.clientEmail),
+        hasPrivateKey: Boolean(adminCreds.privateKey),
+      });
+
+      if (!adminCreds.isConfigured) {
+        console.error(
+          "[Auth Session] Firebase Admin SDK is missing credentials:",
+          {
+            projectId: Boolean(adminCreds.projectId),
+            clientEmail: Boolean(adminCreds.clientEmail),
+            privateKey: Boolean(adminCreds.privateKey),
+          }
+        );
         return NextResponse.json(
           {
             error:
-              "Firebase Admin credentials are not configured on the server. Please check your Vercel Environment Variables.",
+              "Firebase Admin credentials are not configured on the server. Please check FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY in your Vercel Environment Variables.",
+            diagnostic: {
+              hasProjectId: Boolean(adminCreds.projectId),
+              hasClientEmail: Boolean(adminCreds.clientEmail),
+              hasPrivateKey: Boolean(adminCreds.privateKey),
+            },
           },
           { status: 500 }
         );
@@ -62,8 +81,9 @@ export async function POST(request: Request) {
       try {
         adminAuth = getAdminAuth();
         adminDb = getAdminDb();
+        console.log("[Auth Session] Firebase Admin SDK initialized successfully.");
       } catch (initErr: unknown) {
-        console.error("Failed to initialize Firebase Admin SDK:", initErr);
+        console.error("[Auth Session] Failed to initialize Firebase Admin SDK:", initErr);
         const msg = initErr instanceof Error ? initErr.message : "Firebase Admin initialization error.";
         return NextResponse.json({ error: msg }, { status: 500 });
       }
@@ -72,8 +92,9 @@ export async function POST(request: Request) {
       let decodedToken;
       try {
         decodedToken = await adminAuth.verifyIdToken(idToken);
+        console.log("[Auth Session] ID token verified successfully. UID:", decodedToken.uid);
       } catch (verifyErr: unknown) {
-        console.error("Firebase verifyIdToken error:", verifyErr);
+        console.error("[Auth Session] Firebase verifyIdToken error:", verifyErr);
         const msg = verifyErr instanceof Error ? verifyErr.message : "Invalid or expired Firebase ID token.";
         return NextResponse.json({ error: msg }, { status: 401 });
       }
@@ -88,6 +109,12 @@ export async function POST(request: Request) {
       try {
         userDocRef = adminDb.collection("users").doc(uid);
         userSnap = await userDocRef.get();
+        console.log("[Auth Session] User profile lookup:", { uid, exists: userSnap.exists });
+      } catch (dbErr: unknown) {
+        console.error("[Auth Session] Firestore error while reading user profile:", dbErr);
+        const msg = dbErr instanceof Error ? dbErr.message : "Database error while reading user profile.";
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
       } catch (dbErr: unknown) {
         console.error("Firestore error while reading user profile:", dbErr);
         const msg = dbErr instanceof Error ? dbErr.message : "Database error while reading user profile.";
@@ -165,6 +192,8 @@ export async function POST(request: Request) {
         path: "/",
         maxAge: Math.floor(SESSION_EXPIRY_MS / 1000),
       });
+
+      console.log("[Auth Session] Session successfully established for UID:", uid, "Role:", role);
 
       return NextResponse.json({
         success: true,

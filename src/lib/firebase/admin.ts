@@ -48,11 +48,12 @@ export function formatPrivateKey(key: string | undefined): string {
   return cleanKey;
 }
 
-export const isAdminConfigured = Boolean(
-  (process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) &&
-  (process.env.FIREBASE_ADMIN_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL) &&
-  (process.env.FIREBASE_ADMIN_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY)
-);
+export function isFirebaseAdminConfigured(): boolean {
+  const creds = getAdminCredentials();
+  return creds.isConfigured;
+}
+
+export const isAdminConfigured = isFirebaseAdminConfigured();
 
 let adminApp: App | undefined;
 
