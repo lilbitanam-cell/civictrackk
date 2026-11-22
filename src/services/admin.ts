@@ -83,28 +83,63 @@ export async function getRecentAdminComplaints(limitN = 5) {
 /** Fetch high‑priority complaints (priority == 'high' or similar) */
 export async function getHighPriorityComplaints(limitN = 5) {
   const col = collection(getClientDb(), 'complaints');
-  const q = query(col, where('priority', '==', 'high'), orderBy('createdAt', 'desc'), limit(limitN));
-  const snap = await getDocs(q);
-  const list: Complaint[] = [];
-  snap.forEach((doc) => {
-    const d = doc.data();
-    list.push({
-      id: doc.id,
-      citizenId: d.citizenId,
-      title: d.title,
-      description: d.description,
-      category: d.category,
-      address: d.address,
-      city: d.city,
-      landmark: d.landmark,
-      location: d.location,
-      imageUrls: d.imageUrls,
-      status: d.status,
-      priority: d.priority,
-      departmentId: d.departmentId,
-      createdAt: d.createdAt,
-      updatedAt: d.updatedAt,
+  try {
+    const q = query(col, where('priority', '==', 'high'), orderBy('createdAt', 'desc'), limit(limitN));
+    const snap = await getDocs(q);
+    const list: Complaint[] = [];
+    snap.forEach((doc) => {
+      const d = doc.data();
+      list.push({
+        id: doc.id,
+        citizenId: d.citizenId,
+        title: d.title,
+        description: d.description,
+        category: d.category,
+        address: d.address,
+        city: d.city,
+        landmark: d.landmark,
+        location: d.location,
+        imageUrls: d.imageUrls,
+        status: d.status,
+        priority: d.priority,
+        departmentId: d.departmentId,
+        createdAt: d.createdAt,
+        updatedAt: d.updatedAt,
+      });
     });
-  });
-  return list;
+    return list;
+  } catch (err: any) {
+    if (err?.code === 'failed-precondition' || err?.message?.includes('requires an index')) {
+      const q = query(col, where('priority', '==', 'high'));
+      const snap = await getDocs(q);
+      const list: Complaint[] = [];
+      snap.forEach((doc) => {
+        const d = doc.data();
+        list.push({
+          id: doc.id,
+          citizenId: d.citizenId,
+          title: d.title,
+          description: d.description,
+          category: d.category,
+          address: d.address,
+          city: d.city,
+          landmark: d.landmark,
+          location: d.location,
+          imageUrls: d.imageUrls,
+          status: d.status,
+          priority: d.priority,
+          departmentId: d.departmentId,
+          createdAt: d.createdAt,
+          updatedAt: d.updatedAt,
+        });
+      });
+      list.sort((a, b) => {
+        const tA = (a.createdAt as any)?.seconds ? (a.createdAt as any).seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const tB = (b.createdAt as any)?.seconds ? (b.createdAt as any).seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+      return list.slice(0, limitN);
+    }
+    throw err;
+  }
 }

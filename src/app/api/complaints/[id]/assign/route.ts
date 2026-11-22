@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { getComplaintById } from "@/services/complaints.service";
-import { logComplaintHistory } from "@/services/history.service";
-import { sendNotification } from "@/services/notifications.service";
-import { getClientDb } from "@/lib/firebase/config";
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { getComplaintDocumentByIdServer } from "@/services/server/complaints.server";
+import { logComplaintHistoryServer } from "@/services/server/history.server";
+import { sendNotificationServer } from "@/services/server/notifications.server";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -29,11 +22,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const session = verifySessionToken(token);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (session.role !== "admin") {
+    if (!session || session.role !== "admin") {
       return NextResponse.json({ error: "Forbidden: admin only" }, { status: 403 });
     }
 
@@ -47,17 +36,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const complaint = await getComplaintById(complaintId);
+    const complaint = await getComplaintDocumentByIdServer(complaintId);
     if (!complaint) {
       return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
     }
 
-    const db = getClientDb();
-    const now = serverTimestamp();
+    const db = getAdminDb();
+    const now = new Date();
 
     // 1. Update complaint
-    const complaintRef = doc(db, "complaints", complaintId);
-    await updateDoc(complaintRef, {
+    await db.collection("complaints").doc(complaintId).update({
       status: "assigned",
       departmentId,
       departmentName,
@@ -68,8 +56,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     // 2. Create workerTasks doc
-    const tasksRef = collection(db, "workerTasks");
-    const taskDoc = await addDoc(tasksRef, {
+    const taskDoc = await db.collection("workerTasks").add({
       complaintId,
       complaintTicketNumber: complaint.ticketNumber,
       complaintTitle: complaint.title,
@@ -91,7 +78,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const taskId = taskDoc.id;
 
     // 3. Log complaint history
-    await logComplaintHistory({
+    await logComplaintHistoryServer({
       complaintId,
       actorId: session.uid,
       actorName: session.displayName || "Admin",
@@ -103,7 +90,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     // 4. Notify worker
-    await sendNotification({
+    await sendNotificationServer({
       userId: workerId,
       title: "New Task Assigned",
       message: `You have been assigned a new task: "${complaint.title}".`,
@@ -115,7 +102,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // 5. Notify citizen
     if (complaint.citizenId) {
-      await sendNotification({
+      await sendNotificationServer({
         userId: complaint.citizenId,
         title: "Complaint Assigned",
         message: `Your complaint "${complaint.title}" has been assigned to a field worker.`,

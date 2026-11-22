@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isClientFirebaseConfigured, firebaseConfig } from "@/lib/firebase/config";
-import { isAdminConfigured } from "@/lib/firebase/admin";
+import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 
 export async function GET(request: Request) {
   // Accessing request properties ensures dynamic request-time evaluation
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   ].filter(Boolean) as string[];
 
   const isClientReady = isClientFirebaseConfigured;
-  const isAdminReady = isAdminConfigured;
+  const isAdminReady = isFirebaseAdminConfigured();
   const isFullyConfigured = isClientReady && isAdminReady;
 
   return NextResponse.json({

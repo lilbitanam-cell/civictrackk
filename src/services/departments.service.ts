@@ -29,16 +29,26 @@ export async function getAllDepartments(): Promise<DepartmentDocument[]> {
 export async function getActiveDepartments(): Promise<DepartmentDocument[]> {
   const db = getClientDb();
   const deptRef = collection(db, COLLECTION_NAME);
-  const q = query(
-    deptRef,
-    where("isActive", "==", true),
-    orderBy("name", "asc")
-  );
 
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(
-    (d) => ({ id: d.id, ...d.data() } as DepartmentDocument)
-  );
+  try {
+    const q = query(
+      deptRef,
+      where("isActive", "==", true),
+      orderBy("name", "asc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (d) => ({ id: d.id, ...d.data() } as DepartmentDocument)
+    );
+  } catch (err: unknown) {
+    console.warn("[Firestore] Composite index fallback for getActiveDepartments:", err);
+    const fallbackQ = query(deptRef, where("isActive", "==", true));
+    const snapshot = await getDocs(fallbackQ);
+    const depts = snapshot.docs.map(
+      (d) => ({ id: d.id, ...d.data() } as DepartmentDocument)
+    );
+    return depts.sort((a, b) => a.name.localeCompare(b.name));
+  }
 }
 
 export async function getDepartmentById(

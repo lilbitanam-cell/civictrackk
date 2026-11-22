@@ -156,44 +156,99 @@ export async function getRecentAdminComplaintsServer(limitN = 5): Promise<Compla
 /** Admin: high-priority complaints (server-side) */
 export async function getHighPriorityComplaintsServer(limitN = 5): Promise<Complaint[]> {
   const db = getAdminDb();
-  const snap = await db
-    .collection("complaints")
-    .where("priority", "==", "high")
-    .orderBy("createdAt", "desc")
-    .limit(limitN)
-    .get();
+  try {
+    const snap = await db
+      .collection("complaints")
+      .where("priority", "==", "high")
+      .orderBy("createdAt", "desc")
+      .limit(limitN)
+      .get();
 
-  return snap.docs.map((d) => docToComplaint(d.id, d.data()));
+    return snap.docs.map((d) => docToComplaint(d.id, d.data()));
+  } catch (err: any) {
+    if (err?.code === 9 || err?.message?.includes("requires an index")) {
+      console.warn("[Firestore] Composite index missing for complaints (priority == 'high', createdAt desc). Using fallback sort while index provisions.");
+      const snap = await db
+        .collection("complaints")
+        .where("priority", "==", "high")
+        .get();
+      const list = snap.docs.map((d) => docToComplaint(d.id, d.data()));
+      list.sort((a, b) => {
+        const tA = (a.createdAt as any)?.seconds ? (a.createdAt as any).seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const tB = (b.createdAt as any)?.seconds ? (b.createdAt as any).seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+      return list.slice(0, limitN);
+    }
+    throw err;
+  }
 }
 
 /** Get active departments (server-side) */
 export async function getActiveDepartmentsServer(): Promise<any[]> {
   const db = getAdminDb();
-  const snap = await db
-    .collection("departments")
-    .where("isActive", "==", true)
-    .orderBy("name", "asc")
-    .get();
+  try {
+    const snap = await db
+      .collection("departments")
+      .where("isActive", "==", true)
+      .orderBy("name", "asc")
+      .get();
 
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err: any) {
+    if (err?.code === 9 || err?.message?.includes("requires an index")) {
+      console.warn("[Firestore] Composite index missing for departments (isActive == true, name asc). Using fallback sort while index provisions.");
+      const snap = await db
+        .collection("departments")
+        .where("isActive", "==", true)
+        .get();
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""));
+      return list;
+    }
+    throw err;
+  }
 }
 
 /** Get complaints with optional filtering (admin server page) */
 export async function getComplaintsServer(options: any = {}): Promise<any[]> {
   const db = getAdminDb();
-  let ref: FirebaseFirestore.Query = db.collection("complaints");
+  try {
+    let ref: FirebaseFirestore.Query = db.collection("complaints");
 
-  if (options.citizenId) ref = ref.where("citizenId", "==", options.citizenId);
-  if (options.departmentId) ref = ref.where("departmentId", "==", options.departmentId);
-  if (options.assignedWorkerId) ref = ref.where("assignedWorkerId", "==", options.assignedWorkerId);
-  if (options.status) ref = ref.where("status", "==", options.status);
-  if (options.category) ref = ref.where("category", "==", options.category);
+    if (options.citizenId) ref = ref.where("citizenId", "==", options.citizenId);
+    if (options.departmentId) ref = ref.where("departmentId", "==", options.departmentId);
+    if (options.assignedWorkerId) ref = ref.where("assignedWorkerId", "==", options.assignedWorkerId);
+    if (options.status) ref = ref.where("status", "==", options.status);
+    if (options.category) ref = ref.where("category", "==", options.category);
 
-  ref = ref.orderBy("createdAt", "desc");
-  if (options.maxResults) ref = ref.limit(options.maxResults);
+    ref = ref.orderBy("createdAt", "desc");
+    if (options.maxResults) ref = ref.limit(options.maxResults);
 
-  const snap = await ref.get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const snap = await ref.get();
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err: any) {
+    if (err?.code === 9 || err?.message?.includes("requires an index")) {
+      console.warn("[Firestore] Composite index missing for getComplaintsServer. Using fallback sort while index provisions.");
+      let ref: FirebaseFirestore.Query = db.collection("complaints");
+
+      if (options.citizenId) ref = ref.where("citizenId", "==", options.citizenId);
+      if (options.departmentId) ref = ref.where("departmentId", "==", options.departmentId);
+      if (options.assignedWorkerId) ref = ref.where("assignedWorkerId", "==", options.assignedWorkerId);
+      if (options.status) ref = ref.where("status", "==", options.status);
+      if (options.category) ref = ref.where("category", "==", options.category);
+
+      const snap = await ref.get();
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => {
+        const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+      return options.maxResults ? list.slice(0, options.maxResults) : list;
+    }
+    throw err;
+  }
 }
 
 /** Get all complaints for a citizen (full ComplaintDocument list for server pages) */
@@ -224,12 +279,30 @@ export async function getComplaintDocumentByIdServer(complaintId: string): Promi
 /** Get complaint history (server-side) */
 export async function getComplaintHistoryServer(complaintId: string): Promise<any[]> {
   const db = getAdminDb();
-  const snap = await db
-    .collection("complaintHistory")
-    .where("complaintId", "==", complaintId)
-    .orderBy("createdAt", "asc")
-    .get();
+  try {
+    const snap = await db
+      .collection("complaintHistory")
+      .where("complaintId", "==", complaintId)
+      .orderBy("createdAt", "asc")
+      .get();
 
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err: any) {
+    if (err?.code === 9 || err?.message?.includes("requires an index")) {
+      console.warn("[Firestore] Composite index missing for complaintHistory (complaintId == id, createdAt asc). Using fallback sort while index provisions.");
+      const snap = await db
+        .collection("complaintHistory")
+        .where("complaintId", "==", complaintId)
+        .get();
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => {
+        const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return tA - tB;
+      });
+      return list;
+    }
+    throw err;
+  }
 }
 

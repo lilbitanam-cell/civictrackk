@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getComplaints } from "@/services/complaints.service";
 import { getAllDepartments } from "@/services/departments.service";
@@ -576,17 +576,5 @@ function AnalyticsContent() {
 }
 
 export default function AdminAnalyticsPage() {
-  return (
-    <Suspense
-      fallback={
-        <AdminLayout>
-          <div className="py-20 flex justify-center">
-            <LoadingState message="Loading analytics..." />
-          </div>
-        </AdminLayout>
-      }
-    >
-      <AnalyticsContent />
-    </Suspense>
-  );
+  return <AnalyticsContent />;
 }

@@ -69,11 +69,10 @@ const PRIORITY_BADGES: Record<string, string> = {
 };
 
 async function TaskDetailContent({
-  params,
+  id,
 }: {
-  params: Promise<{ id: string }>;
+  id: string;
 }) {
-  const { id } = await params;
   const session = await getCurrentSession();
   if (!session || session.role !== "worker")
     redirect("/unauthorized?reason=worker_required");
@@ -280,15 +279,16 @@ async function TaskDetailContent({
   );
 }
 
-export default function WorkerTaskDetailPage({
+export default async function WorkerTaskDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   return (
     <WorkerLayout>
       <Suspense fallback={<LoadingState message="Loading field task details..." />}>
-        <TaskDetailContent params={params} />
+        <TaskDetailContent id={id} />
       </Suspense>
     </WorkerLayout>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -106,9 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           CivicTrack
         </h2>
         <div className="flex-1">
-          <Suspense fallback={<div className="flex-1" />}>
-            <CitizenNavLinks />
-          </Suspense>
+          <CitizenNavLinks />
         </div>
         <div className="mt-auto pt-4">
           <Button variant="outline" onClick={handleSignOut} className="w-full border-[#E5E8DF] text-[#30352D]">
@@ -123,9 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile bottom navigation */}
-      <Suspense fallback={null}>
-        <CitizenNavMobile />
-      </Suspense>
+      <CitizenNavMobile />
     </div>
   );
 }

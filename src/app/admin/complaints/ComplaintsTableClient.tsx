@@ -198,7 +198,7 @@ export default function ComplaintsTableClient({
                     {/* Ticket */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className="font-mono text-[11px] font-medium text-[#536247] bg-[#F1F3EC] px-2 py-0.5 rounded border border-[#E5E8DF]">
-                        {c.ticketNumber}
+                        {c.ticketNumber || `#${c.id.slice(0, 8).toUpperCase()}`}
                       </span>
                     </td>
 
@@ -214,7 +214,7 @@ export default function ComplaintsTableClient({
 
                     {/* Category */}
                     <td className="px-4 py-3.5 whitespace-nowrap text-[#74796F] capitalize">
-                      {c.categoryLabel || c.category.replace(/_/g, " ")}
+                      {c.categoryLabel || (c.category ? c.category.replace(/_/g, " ") : "General")}
                     </td>
 
                     {/* Priority */}

@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { getTaskById } from "@/services/tasks.service";
-import { getComplaintById } from "@/services/complaints.service";
-import { logComplaintHistory } from "@/services/history.service";
-import { sendNotification } from "@/services/notifications.service";
-import { getClientDb } from "@/lib/firebase/config";
-import {
-  collection,
-  doc,
-  getDocs,
-  updateDoc,
-  serverTimestamp,
-  query,
-  where,
-} from "firebase/firestore";
+import { getTaskByIdServer } from "@/services/server/tasks.server";
+import { getComplaintDocumentByIdServer } from "@/services/server/complaints.server";
+import { logComplaintHistoryServer } from "@/services/server/history.server";
+import { sendNotificationServer } from "@/services/server/notifications.server";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { TaskStatus } from "@/types";
 
 interface RouteContext {
@@ -44,7 +35,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const task = await getTaskById(id);
+    const task = await getTaskByIdServer(id);
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -94,7 +85,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       evidenceImages?: string[];
     };
 
-    const task = await getTaskById(taskId);
+    const task = await getTaskByIdServer(taskId);
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -114,28 +105,27 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const db = getClientDb();
-    const taskRef = doc(db, "workerTasks", taskId);
+    const db = getAdminDb();
+    const now = new Date();
 
     const taskUpdates: Record<string, unknown> = {
       status: newStatus,
-      updatedAt: serverTimestamp(),
+      updatedAt: now,
     };
 
     if (notes) taskUpdates.evidenceNotes = notes;
 
     if (newStatus === "in_progress") {
-      taskUpdates.startedAt = serverTimestamp();
+      taskUpdates.startedAt = now;
 
       // Update complaint status
-      const complaintRef = doc(db, "complaints", task.complaintId);
-      await updateDoc(complaintRef, {
+      await db.collection("complaints").doc(task.complaintId).update({
         status: "in_progress",
-        updatedAt: serverTimestamp(),
+        updatedAt: now,
       });
 
       // Log history
-      await logComplaintHistory({
+      await logComplaintHistoryServer({
         complaintId: task.complaintId,
         actorId: session.uid,
         actorName: session.displayName || task.workerName,
@@ -147,9 +137,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       });
 
       // Notify citizen
-      const complaint = await getComplaintById(task.complaintId);
+      const complaint = await getComplaintDocumentByIdServer(task.complaintId);
       if (complaint?.citizenId) {
-        await sendNotification({
+        await sendNotificationServer({
           userId: complaint.citizenId,
           title: "Work In Progress",
           message: `A field worker has started working on your complaint "${task.complaintTitle}".`,
@@ -159,26 +149,25 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         });
       }
     } else if (newStatus === "completed") {
-      taskUpdates.completedAt = serverTimestamp();
+      taskUpdates.completedAt = now;
 
       if (evidenceImages && evidenceImages.length > 0) {
         taskUpdates.evidenceImages = evidenceImages;
       }
 
       // Update complaint to resolution_submitted (NOT resolved — admin must approve)
-      const complaintRef = doc(db, "complaints", task.complaintId);
       const complaintUpdates: Record<string, unknown> = {
         status: "resolution_submitted",
-        updatedAt: serverTimestamp(),
+        updatedAt: now,
       };
       if (notes) complaintUpdates.resolutionNotes = notes;
       if (evidenceImages && evidenceImages.length > 0) {
         complaintUpdates.resolutionImages = evidenceImages;
       }
-      await updateDoc(complaintRef, complaintUpdates);
+      await db.collection("complaints").doc(task.complaintId).update(complaintUpdates);
 
       // Log history
-      await logComplaintHistory({
+      await logComplaintHistoryServer({
         complaintId: task.complaintId,
         actorId: session.uid,
         actorName: session.displayName || task.workerName,
@@ -190,11 +179,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       });
 
       // Notify all admins
-      const usersRef = collection(db, "users");
-      const adminQuery = query(usersRef, where("role", "==", "admin"));
-      const adminSnap = await getDocs(adminQuery);
+      const adminSnap = await db
+        .collection("users")
+        .where("role", "==", "admin")
+        .get();
+
       const adminNotifPromises = adminSnap.docs.map((adminDoc) =>
-        sendNotification({
+        sendNotificationServer({
           userId: adminDoc.id,
           title: "Resolution Submitted for Review",
           message: `Worker ${task.workerName} has submitted a resolution for complaint "${task.complaintTitle}". Please review and approve or reject.`,
@@ -207,9 +198,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       await Promise.all(adminNotifPromises);
 
       // Notify citizen
-      const complaint = await getComplaintById(task.complaintId);
+      const complaint = await getComplaintDocumentByIdServer(task.complaintId);
       if (complaint?.citizenId) {
-        await sendNotification({
+        await sendNotificationServer({
           userId: complaint.citizenId,
           title: "Resolution Submitted",
           message: `A resolution has been submitted for your complaint "${task.complaintTitle}". It is now awaiting admin verification.`,
@@ -222,7 +213,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       // No side-effects needed beyond status update
     }
 
-    await updateDoc(taskRef, taskUpdates);
+    await db.collection("workerTasks").doc(taskId).update(taskUpdates);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getAdminAuth, getAdminDb, getAdminCredentials } from "@/lib/firebase/admin";
+import {
+  getAdminAuth,
+  getAdminDb,
+  getAdminCredentials,
+  isFirebaseAdminConfigured,
+  isAdminConfigured,
+} from "@/lib/firebase/admin";
 import {
   signSessionToken,
   getCurrentSession,
@@ -59,13 +65,14 @@ export async function POST(request: Request) {
           {
             projectId: Boolean(adminCreds.projectId),
             clientEmail: Boolean(adminCreds.clientEmail),
-            privateKey: Boolean(adminCreds.privateKey),
+            hasPrivateKey: Boolean(adminCreds.privateKey),
           }
         );
         return NextResponse.json(
           {
             error:
               "Firebase Admin credentials are not configured on the server. Please check FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY in your Vercel Environment Variables.",
+            step: "check_admin_credentials",
             diagnostic: {
               hasProjectId: Boolean(adminCreds.projectId),
               hasClientEmail: Boolean(adminCreds.clientEmail),
@@ -85,7 +92,18 @@ export async function POST(request: Request) {
       } catch (initErr: unknown) {
         console.error("[Auth Session] Failed to initialize Firebase Admin SDK:", initErr);
         const msg = initErr instanceof Error ? initErr.message : "Firebase Admin initialization error.";
-        return NextResponse.json({ error: msg }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: `Firebase Admin initialization error: ${msg}`,
+            step: "admin_init",
+            diagnostic: {
+              hasProjectId: Boolean(adminCreds.projectId),
+              hasClientEmail: Boolean(adminCreds.clientEmail),
+              hasPrivateKey: Boolean(adminCreds.privateKey),
+            },
+          },
+          { status: 500 }
+        );
       }
 
       // Verify ID token cryptographically
@@ -96,7 +114,13 @@ export async function POST(request: Request) {
       } catch (verifyErr: unknown) {
         console.error("[Auth Session] Firebase verifyIdToken error:", verifyErr);
         const msg = verifyErr instanceof Error ? verifyErr.message : "Invalid or expired Firebase ID token.";
-        return NextResponse.json({ error: msg }, { status: 401 });
+        return NextResponse.json(
+          {
+            error: `Invalid or expired Firebase ID token: ${msg}`,
+            step: "verify_id_token",
+          },
+          { status: 401 }
+        );
       }
 
       const uid = decodedToken.uid;
@@ -113,12 +137,13 @@ export async function POST(request: Request) {
       } catch (dbErr: unknown) {
         console.error("[Auth Session] Firestore error while reading user profile:", dbErr);
         const msg = dbErr instanceof Error ? dbErr.message : "Database error while reading user profile.";
-        return NextResponse.json({ error: msg }, { status: 500 });
-      }
-      } catch (dbErr: unknown) {
-        console.error("Firestore error while reading user profile:", dbErr);
-        const msg = dbErr instanceof Error ? dbErr.message : "Database error while reading user profile.";
-        return NextResponse.json({ error: msg }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: `Firestore error reading user profile: ${msg}`,
+            step: "firestore_read_user",
+          },
+          { status: 500 }
+        );
       }
 
       let role: UserRole = "citizen";
@@ -138,10 +163,17 @@ export async function POST(request: Request) {
             createdAt: now,
             updatedAt: now,
           });
+          console.log("[Auth Session] Successfully created new citizen Firestore profile for UID:", uid);
         } catch (setErr: unknown) {
-          console.error("Firestore user creation error:", setErr);
+          console.error("[Auth Session] Firestore user creation error:", setErr);
           const msg = setErr instanceof Error ? setErr.message : "Database error creating user profile.";
-          return NextResponse.json({ error: msg }, { status: 500 });
+          return NextResponse.json(
+            {
+              error: `Database error creating user profile: ${msg}`,
+              step: "firestore_create_user",
+            },
+            { status: 500 }
+          );
         }
         role = "citizen";
       } else {
@@ -166,8 +198,9 @@ export async function POST(request: Request) {
       if (decodedToken.role !== role) {
         try {
           await adminAuth.setCustomUserClaims(uid, { role });
+          console.log("[Auth Session] Custom claims synced for UID:", uid, "Role:", role);
         } catch (claimErr: unknown) {
-          console.warn("Failed to set custom claim (non-fatal):", claimErr);
+          console.warn("[Auth Session] Failed to set custom claim (non-fatal):", claimErr);
         }
       }
 
@@ -210,7 +243,7 @@ export async function POST(request: Request) {
 
     // 2. Development Role Testing Mode (Available when live Firebase is pending or testing)
     if (devRole && isValidRole(devRole)) {
-      if (process.env.NODE_ENV === "production" && isAdminConfigured) {
+      if (process.env.NODE_ENV === "production" && isFirebaseAdminConfigured()) {
         return NextResponse.json(
           { error: "Development role testing is not permitted in production." },
           { status: 403 }
@@ -277,9 +310,9 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   } catch (err: unknown) {
-    console.error("Session creation error:", err);
+    console.error("[Auth Session] Session creation error:", err);
     const message = err instanceof Error ? err.message : "Internal authentication error.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, step: "unhandled_post_error" }, { status: 500 });
   }
 }
 

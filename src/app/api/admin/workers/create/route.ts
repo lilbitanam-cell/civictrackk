@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentSession } from "@/lib/auth/session";
-import { getAdminAuth, getAdminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminAuth, getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isAdminConfigured) {
+    if (!isFirebaseAdminConfigured()) {
       return NextResponse.json(
         { error: "Firebase Admin SDK is not configured." },
         { status: 500 }

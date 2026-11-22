@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'firebase/auth';
@@ -98,9 +97,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
           <span className="text-lg font-semibold text-[#30352D]">CivicTrack</span>
           <p className="text-xs text-[#74796F] mt-0.5">Worker Panel</p>
         </div>
-        <Suspense fallback={<div className="flex-1" />}>
-          <WorkerNavLinks />
-        </Suspense>
+        <WorkerNavLinks />
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2 text-sm text-[#74796F] hover:text-[#30352D] hover:bg-[#F1F3EC] rounded-md transition-colors mt-4"
@@ -116,9 +113,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* Mobile bottom navigation */}
-      <Suspense fallback={null}>
-        <WorkerNavMobile />
-      </Suspense>
+      <WorkerNavMobile />
     </div>
   );
 }

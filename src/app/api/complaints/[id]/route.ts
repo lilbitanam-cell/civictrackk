@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { getComplaintById } from "@/services/complaints.service";
-import { logComplaintHistory } from "@/services/history.service";
-import { sendNotification } from "@/services/notifications.service";
-import { getClientDb } from "@/lib/firebase/config";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getComplaintDocumentByIdServer } from "@/services/server/complaints.server";
+import { logComplaintHistoryServer } from "@/services/server/history.server";
+import { sendNotificationServer } from "@/services/server/notifications.server";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { ComplaintStatus, ComplaintPriority } from "@/types";
 
 interface RouteContext {
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const complaint = await getComplaintById(id);
+    const complaint = await getComplaintDocumentByIdServer(id);
     if (!complaint) {
       return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
     }
@@ -91,22 +90,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
-    const complaint = await getComplaintById(id);
+    const complaint = await getComplaintDocumentByIdServer(id);
     if (!complaint) {
       return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
     }
 
-    updates.updatedAt = serverTimestamp();
+    const now = new Date();
+    updates.updatedAt = now;
 
-    const db = getClientDb();
-    const docRef = doc(db, "complaints", id);
-    await updateDoc(docRef, updates);
+    const db = getAdminDb();
+    await db.collection("complaints").doc(id).update(updates);
 
     // Log history
     const previousStatus = complaint.status as ComplaintStatus;
     const newStatus = (updates.status as ComplaintStatus) || previousStatus;
 
-    await logComplaintHistory({
+    await logComplaintHistoryServer({
       complaintId: id,
       actorId: session.uid,
       actorName: session.displayName || "Admin",
@@ -121,7 +120,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     // Notify citizen
     if (complaint.citizenId) {
-      await sendNotification({
+      await sendNotificationServer({
         userId: complaint.citizenId,
         title: "Complaint Updated",
         message: `Your complaint "${complaint.title}" has been updated by an administrator.`,

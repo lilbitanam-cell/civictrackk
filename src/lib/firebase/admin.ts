@@ -37,15 +37,17 @@ export function formatPrivateKey(key: string | undefined): string {
   if (!key) return "";
   let cleanKey = key.trim();
   // Strip outer quotes if wrapped like "..." or '...'
-  if (
+  while (
     (cleanKey.startsWith('"') && cleanKey.endsWith('"')) ||
     (cleanKey.startsWith("'") && cleanKey.endsWith("'"))
   ) {
-    cleanKey = cleanKey.slice(1, -1);
+    cleanKey = cleanKey.slice(1, -1).trim();
   }
-  // Replace literal '\n' sequences with real newlines
-  cleanKey = cleanKey.replace(/\\n/g, "\n");
-  return cleanKey;
+  // Unescape escaped quotes if any
+  cleanKey = cleanKey.replace(/\\"/g, '"');
+  // Replace literal '\n' and '\r' sequences with real newlines
+  cleanKey = cleanKey.replace(/\\n/g, "\n").replace(/\\r/g, "\r");
+  return cleanKey.trim();
 }
 
 export function isFirebaseAdminConfigured(): boolean {

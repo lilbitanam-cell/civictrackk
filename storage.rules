@@ -15,22 +15,58 @@ service firebase.storage {
       return request.resource.size <= 5 * 1024 * 1024; // 5MB limit
     }
 
-    // 1. Citizen complaint photographs
+    // 1. Citizen complaint photographs (supports both /complaints/... and /complaintImages/...)
     match /complaints/{complaintId}/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isImage() && isWithinSizeLimit();
       allow delete: if isAuthenticated();
     }
 
-    // 2. Field worker completion evidence
+    match /complaintImages/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImage() && isWithinSizeLimit();
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 2. Field worker completion evidence (supports /tasks/..., /evidence/..., and /taskEvidence/...)
     match /tasks/{taskId}/evidence/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isImage() && isWithinSizeLimit();
       allow delete: if isAuthenticated();
     }
 
+    match /evidence/{taskId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImage() && isWithinSizeLimit();
+      allow delete: if isAuthenticated();
+    }
+
+    match /taskEvidence/{userId}/{taskId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId && isImage() && isWithinSizeLimit();
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
     // 3. User profile photographs
     match /profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.auth.uid == userId
+                   && isImage()
+                   && isWithinSizeLimit();
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /profilePhotos/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.auth.uid == userId
+                   && isImage()
+                   && isWithinSizeLimit();
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /profilePhotos/{userId}/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated()
                    && request.auth.uid == userId

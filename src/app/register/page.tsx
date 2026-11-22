@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
@@ -119,17 +120,40 @@ export default function RegisterPage() {
 
     try {
       const auth = getClientAuth();
-      // 1. Create account in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email.trim(),
-        formData.password
-      );
-
-      const user = userCredential.user;
-
-      // 2. Set Firebase Auth display name
-      await updateProfile(user, { displayName: formData.fullName.trim() });
+      let user;
+      try {
+        // 1. Create account in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email.trim(),
+          formData.password
+        );
+        user = userCredential.user;
+        // 2. Set Firebase Auth display name
+        await updateProfile(user, { displayName: formData.fullName.trim() });
+      } catch (createErr: unknown) {
+        const code = (createErr as { code?: string })?.code;
+        if (code === "auth/email-already-in-use") {
+          // If the account was already created in Firebase Auth (e.g. from an earlier attempt
+          // where session establishment failed), verify credentials by signing in to complete session.
+          try {
+            const signInCredential = await signInWithEmailAndPassword(
+              auth,
+              formData.email.trim(),
+              formData.password
+            );
+            user = signInCredential.user;
+            if (formData.fullName.trim() && !user.displayName) {
+              await updateProfile(user, { displayName: formData.fullName.trim() });
+            }
+          } catch {
+            // Password mismatch or belongs to another user
+            throw createErr;
+          }
+        } else {
+          throw createErr;
+        }
+      }
 
       // 3. Establish server session via Admin SDK & set citizen claims
       const idToken = await user.getIdToken();

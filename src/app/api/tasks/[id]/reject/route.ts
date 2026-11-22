@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { getTaskById } from "@/services/tasks.service";
-import { logComplaintHistory } from "@/services/history.service";
-import { sendNotification } from "@/services/notifications.service";
-import { getClientDb } from "@/lib/firebase/config";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getTaskByIdServer } from "@/services/server/tasks.server";
+import { logComplaintHistoryServer } from "@/services/server/history.server";
+import { sendNotificationServer } from "@/services/server/notifications.server";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -38,30 +37,29 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Rejection reason is required" }, { status: 400 });
     }
 
-    const task = await getTaskById(taskId);
+    const task = await getTaskByIdServer(taskId);
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    const db = getClientDb();
+    const db = getAdminDb();
+    const now = new Date();
 
     // 1. Reopen task (back to pending)
-    const taskRef = doc(db, "workerTasks", taskId);
-    await updateDoc(taskRef, {
+    await db.collection("workerTasks").doc(taskId).update({
       status: "pending",
       rejectionReason: reason,
-      updatedAt: serverTimestamp(),
+      updatedAt: now,
     });
 
     // 2. Revert complaint status to in_progress
-    const complaintRef = doc(db, "complaints", task.complaintId);
-    await updateDoc(complaintRef, {
+    await db.collection("complaints").doc(task.complaintId).update({
       status: "in_progress",
-      updatedAt: serverTimestamp(),
+      updatedAt: now,
     });
 
     // 3. Log history
-    await logComplaintHistory({
+    await logComplaintHistoryServer({
       complaintId: task.complaintId,
       actorId: session.uid,
       actorName: session.displayName || "Admin",
@@ -73,7 +71,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     // 4. Notify worker
-    await sendNotification({
+    await sendNotificationServer({
       userId: task.workerId,
       title: "Resolution Rejected",
       message: `Your submitted resolution for "${task.complaintTitle}" was rejected. Reason: ${reason}`,

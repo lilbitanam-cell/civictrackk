@@ -92,11 +92,10 @@ const PRIORITY_BADGES: Record<string, string> = {
 };
 
 async function ComplaintReviewContent({
-  params,
+  id,
 }: {
-  params: Promise<{ id: string }>;
+  id: string;
 }) {
-  const { id } = await params;
   const session = await getCurrentSession();
   if (!session || session.role !== "admin")
     redirect("/unauthorized?reason=admin_required");
@@ -307,15 +306,16 @@ async function ComplaintReviewContent({
   );
 }
 
-export default function AdminComplaintReviewPage({
+export default async function AdminComplaintReviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   return (
     <AdminLayout>
       <Suspense fallback={<LoadingState message="Loading complaint review..." />}>
-        <ComplaintReviewContent params={params} />
+        <ComplaintReviewContent id={id} />
       </Suspense>
     </AdminLayout>
   );

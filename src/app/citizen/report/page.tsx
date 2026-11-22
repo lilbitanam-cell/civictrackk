@@ -187,25 +187,55 @@ export default function ReportComplaintPage() {
       // 2. Find category label
       const categoryObj = CATEGORIES.find((c) => c.value === form.category);
 
-      // 3. Create complaint
-      await createComplaint({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        category: form.category as ComplaintCategory,
-        categoryLabel: categoryObj?.label ?? (form.category as string),
-        priority: form.priority as ComplaintPriority,
-        location: {
-          latitude: location.lat,
-          longitude: location.lng,
-          address: form.address.trim(),
-          city: form.city.trim(),
-          landmark: form.landmark.trim() || undefined,
-        },
-        images: imageUrls,
-        citizenId: user.uid,
-        citizenName: user.displayName ?? user.email ?? "Unknown",
-        citizenPhone: undefined,
-      });
+      // 3. Create complaint (direct client write with seamless server API fallback)
+      try {
+        await createComplaint({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          category: form.category as ComplaintCategory,
+          categoryLabel: categoryObj?.label ?? (form.category as string),
+          priority: form.priority as ComplaintPriority,
+          location: {
+            latitude: location.lat,
+            longitude: location.lng,
+            address: form.address.trim(),
+            city: form.city.trim(),
+            landmark: form.landmark.trim() || undefined,
+          },
+          images: imageUrls,
+          citizenId: user.uid,
+          citizenName: user.displayName ?? user.email ?? "Unknown",
+          citizenPhone: undefined,
+        });
+      } catch (clientCreateErr) {
+        console.warn("Direct Firestore creation failed, falling back to server API endpoint:", clientCreateErr);
+        const res = await fetch("/api/complaints", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: form.title.trim(),
+            description: form.description.trim(),
+            category: form.category as ComplaintCategory,
+            categoryLabel: categoryObj?.label ?? (form.category as string),
+            priority: form.priority as ComplaintPriority,
+            location: {
+              latitude: location.lat,
+              longitude: location.lng,
+              address: form.address.trim(),
+              city: form.city.trim(),
+              landmark: form.landmark.trim() || undefined,
+            },
+            images: imageUrls,
+            citizenId: user.uid,
+            citizenName: user.displayName ?? user.email ?? "Unknown",
+            citizenPhone: undefined,
+          }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to submit complaint.");
+        }
+      }
 
       // 4. Redirect with success
       router.push("/citizen/dashboard?success=complaint_submitted");

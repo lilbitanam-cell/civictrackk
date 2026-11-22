@@ -131,8 +131,7 @@ function getStepIndex(status: string): number {
   }
 }
 
-async function Content({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+async function Content({ id }: { id: string }) {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
 
@@ -431,15 +430,16 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
-export default function CitizenComplaintDetailPage({
+export default async function CitizenComplaintDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   return (
     <DashboardLayout>
       <Suspense fallback={<LoadingState message="Loading complaint details..." />}>
-        <Content params={params} />
+        <Content id={id} />
       </Suspense>
     </DashboardLayout>
   );

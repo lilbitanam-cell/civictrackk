@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { getComplaintById } from "@/services/complaints.service";
-import { logComplaintHistory } from "@/services/history.service";
-import { sendNotification } from "@/services/notifications.service";
-import { getClientDb } from "@/lib/firebase/config";
-import {
-  doc,
-  updateDoc,
-  serverTimestamp,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { getComplaintDocumentByIdServer } from "@/services/server/complaints.server";
+import { logComplaintHistoryServer } from "@/services/server/history.server";
+import { sendNotificationServer } from "@/services/server/notifications.server";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -64,7 +55,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const complaint = await getComplaintById(complaintId);
+    const complaint = await getComplaintDocumentByIdServer(complaintId);
     if (!complaint) {
       return NextResponse.json(
         { error: "Complaint not found" },
@@ -81,18 +72,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const db = getClientDb();
-    const complaintRef = doc(db, "complaints", complaintId);
+    const db = getAdminDb();
+    const now = new Date();
 
     if (action === "approve") {
       // ── APPROVE: Set complaint to resolved ──
-      await updateDoc(complaintRef, {
+      await db.collection("complaints").doc(complaintId).update({
         status: "resolved",
-        resolvedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        resolvedAt: now,
+        updatedAt: now,
       });
 
-      await logComplaintHistory({
+      await logComplaintHistoryServer({
         complaintId,
         actorId: session.uid,
         actorName: session.displayName || "Admin",
@@ -105,7 +96,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
       // Notify citizen
       if (complaint.citizenId) {
-        await sendNotification({
+        await sendNotificationServer({
           userId: complaint.citizenId,
           title: "Complaint Resolved",
           message: `Your complaint "${complaint.title}" has been resolved. Thank you for your report.`,
@@ -117,7 +108,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
       // Notify worker
       if (complaint.assignedWorkerId) {
-        await sendNotification({
+        await sendNotificationServer({
           userId: complaint.assignedWorkerId,
           title: "Resolution Approved",
           message: `Your resolution for "${complaint.title}" has been approved by admin.`,
@@ -128,30 +119,29 @@ export async function POST(request: NextRequest, context: RouteContext) {
       }
     } else {
       // ── REJECT: Return complaint to in_progress ──
-      await updateDoc(complaintRef, {
+      await db.collection("complaints").doc(complaintId).update({
         status: "in_progress",
-        updatedAt: serverTimestamp(),
+        updatedAt: now,
       });
 
       // Also revert the worker task back to in_progress
       if (complaint.assignedWorkerId) {
-        const tasksRef = collection(db, "workerTasks");
-        const taskQuery = query(
-          tasksRef,
-          where("complaintId", "==", complaintId),
-          where("workerId", "==", complaint.assignedWorkerId)
-        );
-        const taskSnap = await getDocs(taskQuery);
+        const taskSnap = await db
+          .collection("workerTasks")
+          .where("complaintId", "==", complaintId)
+          .where("workerId", "==", complaint.assignedWorkerId)
+          .get();
+
         for (const taskDoc of taskSnap.docs) {
-          await updateDoc(doc(db, "workerTasks", taskDoc.id), {
+          await db.collection("workerTasks").doc(taskDoc.id).update({
             status: "in_progress",
             completedAt: null,
-            updatedAt: serverTimestamp(),
+            updatedAt: now,
           });
         }
       }
 
-      await logComplaintHistory({
+      await logComplaintHistoryServer({
         complaintId,
         actorId: session.uid,
         actorName: session.displayName || "Admin",
@@ -164,7 +154,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
       // Notify worker
       if (complaint.assignedWorkerId) {
-        await sendNotification({
+        await sendNotificationServer({
           userId: complaint.assignedWorkerId,
           title: "Resolution Rejected",
           message: `Your resolution for "${complaint.title}" was rejected. Reason: ${reason}. Please rework.`,
@@ -176,7 +166,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
       // Notify citizen
       if (complaint.citizenId) {
-        await sendNotification({
+        await sendNotificationServer({
           userId: complaint.citizenId,
           title: "Resolution Under Rework",
           message: `The resolution for your complaint "${complaint.title}" is being reworked.`,
