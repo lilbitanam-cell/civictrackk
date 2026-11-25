@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { getClientAuth, isClientFirebaseConfigured } from "@/lib/firebase/config";
-import { Building2, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@/types";
 
@@ -53,25 +53,21 @@ export function TopNav({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[#E5E8DF] bg-white">
-      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-40 w-full border-b border-[#DDD9CE] bg-[#F7F5EE]/95 backdrop-blur-[2px]">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand */}
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2 text-[#30352D] hover:opacity-90 transition-opacity"
+            className="flex items-center hover:opacity-90 transition-opacity"
+            aria-label="CivicTrack — The Civic Journal"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-[#788568] text-white">
-              <Building2 className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-tight text-[#30352D] leading-none">
-                CivicTrack
-              </span>
-              <span className="text-[10px] text-[#74796F] font-medium tracking-wide uppercase mt-0.5">
-                Municipal Services
-              </span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/logos/CivicTrack Watercolor Civic Emblem.png"
+              alt="CivicTrack"
+              className="h-10 sm:h-11 w-auto object-contain mix-blend-multiply"
+            />
           </Link>
           {currentRole && (
             <Badge
@@ -87,14 +83,14 @@ export function TopNav({
         <div className="flex items-center gap-3">
           {userEmail ? (
             <div className="flex items-center gap-3 text-xs">
-              <span className="hidden md:inline-block text-[#74796F]">
+              <span className="hidden md:inline-block text-[#77796F]">
                 {userEmail}
               </span>
               <button
                 type="button"
                 onClick={handleSignOut}
                 disabled={isLoggingOut}
-                className="flex items-center gap-1 text-[#74796F] hover:text-[#9B3B3B] font-medium transition-colors"
+                className="flex items-center gap-1 text-[#77796F] hover:text-[#8B342E] font-medium transition-colors"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 <span>{isLoggingOut ? "Signing out..." : "Sign out"}</span>
@@ -103,16 +99,22 @@ export function TopNav({
           ) : showAuthLinks ? (
             <div className="flex items-center gap-2 text-xs font-medium">
               <Link
+                href="/track"
+                className="rounded-sm px-3 py-1.5 text-[#252820] hover:bg-[#ECE9DF] transition-colors"
+              >
+                Track Report
+              </Link>
+              <Link
                 href="/login"
-                className="rounded-md px-3 py-1.5 text-[#30352D] hover:bg-[#F1F3EC] transition-colors"
+                className="rounded-sm px-3 py-1.5 text-[#252820] hover:bg-[#ECE9DF] transition-colors"
               >
                 Log In
               </Link>
               <Link
                 href="/register"
-                className="rounded-md bg-[#788568] px-3 py-1.5 text-white hover:bg-[#536247] transition-colors"
+                className="rounded-sm bg-[#1B3A2E] px-3.5 py-1.5 text-[#F7F5EE] hover:bg-[#263D30] transition-colors"
               >
-                Register
+                Report an Issue
               </Link>
             </div>
           ) : null}

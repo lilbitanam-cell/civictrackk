@@ -14,12 +14,12 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center py-12 px-4 text-center rounded-md border border-dashed border-[#E5E8DF] bg-white",
+        "flex flex-col items-center justify-center py-12 px-4 text-center rounded-sm border border-dashed border-[#DDD9CE] bg-[#FAF8F2]",
         className
       )}
     >
-      <Loader2 className="h-5 w-5 animate-spin text-[#788568]" />
-      <p className="mt-2.5 text-xs font-medium text-[#74796F]">{message}</p>
+      <Loader2 className="h-5 w-5 animate-spin text-[#1B3A2E]" />
+      <p className="mt-2.5 text-xs font-medium text-[#77796F]">{message}</p>
     </div>
   );
 }

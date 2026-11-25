@@ -18,9 +18,14 @@ export default function WorkerTasksPage() {
   return (
     <WorkerLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#30352D]">My Tasks</h1>
-          <p className="text-sm text-[#74796F] mt-1">All tasks assigned to you.</p>
+        <div className="border-b border-[#DDD9CE] pb-4">
+          <p className="text-[11px] uppercase tracking-[0.14em] text-[#718267] font-medium">
+            Assigned Queue
+          </p>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1B3A2E] mt-1">
+            My Tasks
+          </h1>
+          <p className="text-sm text-[#77796F] mt-1">All field assignments assigned to you.</p>
         </div>
         <Suspense fallback={<LoadingState message="Loading tasks..." />}>
           <Content />

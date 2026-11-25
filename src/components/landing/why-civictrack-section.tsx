@@ -3,73 +3,80 @@ import { ShieldCheck, Clock, Users, MessageSquare } from "lucide-react";
 const REASONS = [
   {
     icon: ShieldCheck,
-    title: "Accountable to Your Ward",
-    body: "Every complaint is logged against the specific ward and department. Supervisors can track unresolved issues and act on them.",
+    title: "Accountable to Every Ward",
+    body: "Complaints are logged against specific wards and municipal departments so supervisors can identify bottlenecks early.",
   },
   {
     icon: Clock,
-    title: "No More Endless Follow-ups",
-    body: "Track resolution without repeated calls to the municipal office. The system maintains a full history of every action taken.",
+    title: "Transparent Progress History",
+    body: "Every status transition, assignment, and remark is recorded chronologically — eliminating repeated office visits.",
   },
   {
     icon: Users,
-    title: "Built for All Residents",
-    body: "Designed for ease of use on any device. Submit issues from your phone, tablet or desktop — no technical knowledge needed.",
+    title: "Accessible on Any Device",
+    body: "Clear language, low-bandwidth image compression, and map pinning designed for everyday residents.",
   },
   {
     icon: MessageSquare,
-    title: "Direct Communication Channel",
-    body: "Citizens and municipal staff interact on a shared record. Comments, updates and closures are visible to both parties.",
+    title: "Shared Operational Record",
+    body: "Residents, field technicians, and administrators read from the same verified source of truth.",
   },
 ];
 
 export function WhyCivicTrackSection() {
   return (
-    <section id="about" className="border-t border-[#E5E8DF] bg-[#F8F9F5] py-14 px-4 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+    <section
+      id="about"
+      className="relative overflow-hidden bg-[#ECE9DF]/45 py-16 sm:py-20 px-4 sm:px-6 border-b border-[#DDD9CE]"
+    >
+      {/* Subtle botanical branch accent near editorial transition */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/images/Hand-Drawn Olive Green Branch.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none select-none hidden xl:block absolute -top-2 right-0 w-[300px] h-auto object-contain mix-blend-multiply opacity-70"
+      />
 
-          {/* Left */}
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#788568]">
-              Why CivicTrack
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          {/* Left editorial essay */}
+          <div className="lg:col-span-5 space-y-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#718267]">
+              Neighbourhood Impact &amp; Purpose
             </p>
-            <h2 className="text-2xl font-bold tracking-tight text-[#30352D] max-w-sm">
-              Civic engagement that actually works
+            <h2 className="font-serif text-3xl sm:text-4xl font-semibold tracking-tight text-[#1B3A2E] leading-tight">
+              Public stewardship built on visibility
             </h2>
-            <p className="mt-4 text-sm text-[#74796F] leading-relaxed">
-              Most civic complaint systems are opaque, slow and frustrating. CivicTrack is designed around a simple
-              principle: every resident deserves to know the status of their complaint at any time.
+            <p className="text-sm text-[#77796F] leading-relaxed">
+              Most municipal complaint channels disappear into unindexed ledgers.
+              CivicTrack treats every report as a civic dispatch — visible,
+              attributable, and documented through verified field closure.
             </p>
-            <p className="mt-3 text-sm text-[#74796F] leading-relaxed">
-              We built the platform to make municipal teams faster and to give citizens a direct voice — without
-              bureaucratic bottlenecks getting in the way.
+            <p className="text-sm text-[#77796F] leading-relaxed">
+              When residents see repairs documented openly across neighbouring
+              streets, trust in local institutions grows organically.
             </p>
-
-            {/* Photo */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1587474260584-136574528ed5?w=700&q=75&auto=format&fit=crop"
-              alt="Municipal workers repairing a road"
-              className="mt-8 rounded-md border border-[#E5E8DF] w-full max-h-56 object-cover"
-              loading="lazy"
-            />
           </div>
 
-          {/* Right: reason cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Right: 2x2 editorial principles */}
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 border-t border-l border-[#DDD9CE]">
             {REASONS.map((r) => {
               const Icon = r.icon;
               return (
                 <div
                   key={r.title}
-                  className="rounded-md border border-[#E5E8DF] bg-white p-5 space-y-2.5"
+                  className="border-r border-b border-[#DDD9CE] bg-[#FAF8F2] p-6 space-y-3"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#F1F3EC] text-[#536247]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[#DDD9CE] bg-[#F7F5EE] text-[#1B3A2E]">
                     <Icon className="h-4 w-4" strokeWidth={1.75} />
                   </div>
-                  <h3 className="text-sm font-semibold text-[#30352D]">{r.title}</h3>
-                  <p className="text-xs text-[#74796F] leading-relaxed">{r.body}</p>
+                  <h3 className="font-serif text-lg font-semibold text-[#252820]">
+                    {r.title}
+                  </h3>
+                  <p className="text-xs text-[#77796F] leading-relaxed">
+                    {r.body}
+                  </p>
                 </div>
               );
             })}

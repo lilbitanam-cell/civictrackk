@@ -43,14 +43,14 @@ import {
 import { format, subDays, isAfter, isBefore, parseISO } from "date-fns";
 
 const SAGE_COLORS = [
-  "#536247",
-  "#788568",
-  "#96A284",
-  "#B4BBA5",
-  "#6A7B5A",
-  "#3E4B37",
+  "#1B3A2E",
+  "#263D30",
+  "#718267",
+  "#9AA88E",
+  "#C8C3B4",
+  "#2D5A3F",
   "#8C967A",
-  "#30352D",
+  "#252820",
 ];
 
 function AnalyticsContent() {
@@ -289,19 +289,22 @@ function AnalyticsContent() {
     <AdminLayout>
       <div className="space-y-6 max-w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DDD9CE]">
           <div>
-            <h1 className="text-2xl font-semibold text-[#30352D]">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[#718267] font-medium">
+              Civic Intelligence
+            </p>
+            <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1B3A2E] mt-1">
               Municipal Analytics & Reports
             </h1>
-            <p className="text-sm text-[#74796F]">
+            <p className="text-sm text-[#77796F]">
               Real-time performance analytics calculated directly from database records.
             </p>
           </div>
           <Button
             onClick={handleExportCSV}
             disabled={filteredComplaints.length === 0}
-            className="bg-[#788568] hover:bg-[#536247] text-white text-sm gap-2 shrink-0"
+            className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-sm gap-2 shrink-0"
           >
             <Download className="h-4 w-4" />
             <span>Export CSV</span>
@@ -309,14 +312,14 @@ function AnalyticsContent() {
         </div>
 
         {/* Date Filter Bar */}
-        <div className="bg-white p-4 rounded-lg border border-[#E5E8DF] shadow-xs flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-[#30352D]">
-            <Calendar className="h-4 w-4 text-[#788568]" />
+        <div className="bg-[#FAF8F2] p-4 rounded-sm border border-[#DDD9CE] flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-[#252820]">
+            <Calendar className="h-4 w-4 text-[#718267]" />
             <span>Time Range:</span>
           </div>
 
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-40 border-[#E5E8DF] text-sm">
+            <SelectTrigger className="w-40 border-[#DDD9CE] bg-[#F7F5EE] text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -334,14 +337,14 @@ function AnalyticsContent() {
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="text-xs border-[#E5E8DF] w-36"
+                className="text-xs border-[#DDD9CE] bg-[#F7F5EE] w-36"
               />
-              <span className="text-xs text-[#74796F]">to</span>
+              <span className="text-xs text-[#77796F]">to</span>
               <Input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="text-xs border-[#E5E8DF] w-36"
+                className="text-xs border-[#DDD9CE] bg-[#F7F5EE] w-36"
               />
             </div>
           )}
@@ -352,78 +355,78 @@ function AnalyticsContent() {
             <LoadingState message="Calculating analytics..." />
           </div>
         ) : error ? (
-          <div className="p-4 bg-red-50 text-red-700 border border-red-300 rounded-md">
+          <div className="p-4 bg-[#FAF0EE] text-[#8B342E] border border-[#E5C9C6] rounded-sm">
             {error}
           </div>
         ) : (
           <>
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-[#E5E8DF] bg-white">
+              <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
                 <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xs font-medium text-[#74796F]">
+                  <CardTitle className="text-xs font-medium text-[#77796F]">
                     Total Complaints
                   </CardTitle>
-                  <FileText className="h-4 w-4 text-[#788568]" />
+                  <FileText className="h-4 w-4 text-[#718267]" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="text-2xl font-bold text-[#30352D]">
+                  <div className="font-serif text-2xl font-semibold text-[#252820]">
                     {stats.total}
                   </div>
-                  <p className="text-[11px] text-[#74796F] mt-1">
+                  <p className="text-[11px] text-[#77796F] mt-1">
                     Recorded in selected period
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-[#E5E8DF] bg-white">
+              <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
                 <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xs font-medium text-[#74796F]">
+                  <CardTitle className="text-xs font-medium text-[#77796F]">
                     Resolution Rate
                   </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-[#536247]" />
+                  <TrendingUp className="h-4 w-4 text-[#1B3A2E]" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="text-2xl font-bold text-[#536247]">
+                  <div className="font-serif text-2xl font-semibold text-[#1B3A2E]">
                     {stats.resolutionRate}%
                   </div>
-                  <p className="text-[11px] text-[#74796F] mt-1">
+                  <p className="text-[11px] text-[#77796F] mt-1">
                     {stats.resolved} of {stats.total} resolved
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-[#E5E8DF] bg-white">
+              <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
                 <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xs font-medium text-[#74796F]">
+                  <CardTitle className="text-xs font-medium text-[#77796F]">
                     Avg. Resolution Time
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-[#788568]" />
+                  <Clock className="h-4 w-4 text-[#718267]" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="text-2xl font-bold text-[#30352D]">
+                  <div className="font-serif text-2xl font-semibold text-[#252820]">
                     {stats.avgResolutionHours > 0
                       ? `${stats.avgResolutionHours} hrs`
                       : "N/A"}
                   </div>
-                  <p className="text-[11px] text-[#74796F] mt-1">
+                  <p className="text-[11px] text-[#77796F] mt-1">
                     From submission to resolution
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-[#E5E8DF] bg-white">
+              <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
                 <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xs font-medium text-[#74796F]">
+                  <CardTitle className="text-xs font-medium text-[#77796F]">
                     Active Work Orders
                   </CardTitle>
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertCircle className="h-4 w-4 text-amber-700" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="text-2xl font-bold text-amber-600">
+                  <div className="font-serif text-2xl font-semibold text-amber-800">
                     {stats.inProgress}
                   </div>
-                  <p className="text-[11px] text-[#74796F] mt-1">
+                  <p className="text-[11px] text-[#77796F] mt-1">
                     Assigned or In Progress
                   </p>
                 </CardContent>
@@ -433,15 +436,15 @@ function AnalyticsContent() {
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Status Breakdown Pie */}
-              <Card className="border-[#E5E8DF] bg-white">
-                <CardHeader className="p-4 border-b border-[#E5E8DF]">
-                  <CardTitle className="text-sm font-semibold text-[#30352D]">
+              <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
+                <CardHeader className="p-4 border-b border-[#DDD9CE]">
+                  <CardTitle className="font-serif text-base font-medium text-[#252820]">
                     Complaint Status Distribution
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 h-72">
                   {statusData.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-xs text-[#74796F]">
+                    <div className="h-full flex items-center justify-center text-xs text-[#77796F]">
                       No data for selected period
                     </div>
                   ) : (
@@ -472,30 +475,30 @@ function AnalyticsContent() {
               </Card>
 
               {/* Category Bar Chart */}
-              <Card className="border-[#E5E8DF] bg-white">
-                <CardHeader className="p-4 border-b border-[#E5E8DF]">
-                  <CardTitle className="text-sm font-semibold text-[#30352D]">
+              <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
+                <CardHeader className="p-4 border-b border-[#DDD9CE]">
+                  <CardTitle className="font-serif text-base font-medium text-[#252820]">
                     Issues by Civic Category
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 h-72">
                   {categoryData.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-xs text-[#74796F]">
+                    <div className="h-full flex items-center justify-center text-xs text-[#77796F]">
                       No data for selected period
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={categoryData} layout="vertical">
-                        <XAxis type="number" fontSize={11} stroke="#74796F" />
+                        <XAxis type="number" fontSize={11} stroke="#77796F" />
                         <YAxis
                           type="category"
                           dataKey="name"
                           width={120}
                           fontSize={11}
-                          stroke="#74796F"
+                          stroke="#77796F"
                         />
                         <Tooltip />
-                        <Bar dataKey="count" fill="#788568" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="count" fill="#718267" radius={[0, 3, 3, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -504,16 +507,16 @@ function AnalyticsContent() {
             </div>
 
             {/* Department Performance Table */}
-            <Card className="border-[#E5E8DF] bg-white">
-              <CardHeader className="p-4 border-b border-[#E5E8DF]">
-                <CardTitle className="text-sm font-semibold text-[#30352D]">
+            <Card className="border-[#DDD9CE] bg-[#FAF8F2]">
+              <CardHeader className="p-4 border-b border-[#DDD9CE]">
+                <CardTitle className="font-serif text-base font-medium text-[#252820]">
                   Department Performance & Resolution Rate
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left border-collapse">
-                    <thead className="bg-[#F8F9F5] text-xs text-[#74796F] border-b border-[#E5E8DF]">
+                    <thead className="bg-[#ECE9DF]/60 text-xs text-[#77796F] border-b border-[#DDD9CE]">
                       <tr>
                         <th className="py-3 px-4 font-medium">Department</th>
                         <th className="py-3 px-4 font-medium text-center">
@@ -530,32 +533,32 @@ function AnalyticsContent() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E5E8DF]">
+                    <tbody className="divide-y divide-[#DDD9CE]">
                       {departmentPerformance.map((dept) => (
                         <tr
                           key={dept.department}
-                          className="hover:bg-[#F8F9F5] transition-colors"
+                          className="hover:bg-[#ECE9DF]/40 transition-colors"
                         >
-                          <td className="py-3 px-4 font-medium text-[#30352D]">
+                          <td className="py-3 px-4 font-medium text-[#252820]">
                             {dept.department}
                           </td>
-                          <td className="py-3 px-4 text-center text-[#74796F]">
+                          <td className="py-3 px-4 text-center text-[#77796F]">
                             {dept.total}
                           </td>
-                          <td className="py-3 px-4 text-center text-amber-700 font-medium">
+                          <td className="py-3 px-4 text-center text-amber-800 font-medium">
                             {dept.inProgress}
                           </td>
-                          <td className="py-3 px-4 text-center text-[#536247] font-medium">
+                          <td className="py-3 px-4 text-center text-[#1B3A2E] font-medium">
                             {dept.resolved}
                           </td>
                           <td className="py-3 px-4 text-right">
                             <span
-                              className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                              className={`inline-block px-2 py-0.5 rounded-sm text-xs font-semibold ${
                                 dept.rate >= 75
-                                  ? "bg-[#E9EDE4] text-[#3E4B37]"
+                                  ? "bg-[#ECE9DF] text-[#1B3A2E]"
                                   : dept.rate >= 40
-                                  ? "bg-amber-50 text-amber-800"
-                                  : "bg-red-50 text-red-700"
+                                  ? "bg-amber-50/80 text-amber-900"
+                                  : "bg-[#FAF0EE] text-[#8B342E]"
                               }`}
                             >
                               {dept.rate}%

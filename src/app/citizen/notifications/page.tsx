@@ -23,8 +23,13 @@ export default function CitizenNotificationsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-[#30352D]">Notifications</h1>
-          <p className="text-sm text-[#74796F] mt-1">Updates about your complaints.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#718267]">
+            Resident Inbox
+          </p>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1B3A2E] mt-1">
+            Notifications &amp; Dispatch Alerts
+          </h1>
+          <p className="text-sm text-[#77796F] mt-1">Updates about your filed civic complaints.</p>
         </div>
         <Suspense fallback={<LoadingState message="Loading notifications..." />}>
           <Content />

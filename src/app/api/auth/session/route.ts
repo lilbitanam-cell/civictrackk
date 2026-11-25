@@ -178,8 +178,9 @@ export async function POST(request: Request) {
         role = "citizen";
       } else {
         const userData = userSnap.data();
-        role = (userData?.role as UserRole) || "citizen";
-        departmentId = userData?.departmentId;
+        const rawRole = String(userData?.role || "citizen");
+        role = isValidRole(rawRole) ? rawRole : "citizen";
+        departmentId = userData?.departmentId || undefined;
         isActive = userData?.isActive !== false;
       }
 
@@ -194,10 +195,13 @@ export async function POST(request: Request) {
         );
       }
 
-      // Sync custom claims
-      if (decodedToken.role !== role) {
+      // Sync custom claims (preserving departmentId for workers/dept admins)
+      const tokenDeptId = decodedToken.departmentId || undefined;
+      if (decodedToken.role !== role || tokenDeptId !== departmentId) {
         try {
-          await adminAuth.setCustomUserClaims(uid, { role });
+          const claims: Record<string, unknown> = { role };
+          if (departmentId) claims.departmentId = departmentId;
+          await adminAuth.setCustomUserClaims(uid, claims);
           console.log("[Auth Session] Custom claims synced for UID:", uid, "Role:", role);
         } catch (claimErr: unknown) {
           console.warn("[Auth Session] Failed to set custom claim (non-fatal):", claimErr);
@@ -216,7 +220,7 @@ export async function POST(request: Request) {
         exp: now + SESSION_EXPIRY_MS,
       };
 
-      const token = signSessionToken(payload);
+      const token = await signSessionToken(payload);
 
       cookieStore.set(SESSION_COOKIE_NAME, token, {
         httpOnly: true,
@@ -281,7 +285,7 @@ export async function POST(request: Request) {
         exp: now + SESSION_EXPIRY_MS,
       };
 
-      const token = signSessionToken(payload);
+      const token = await signSessionToken(payload);
 
       cookieStore.set(SESSION_COOKIE_NAME, token, {
         httpOnly: true,

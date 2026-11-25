@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   GoogleAuthProvider,
 } from "firebase/auth";
 import { getClientAuth, isClientFirebaseConfigured } from "@/lib/firebase/config";
@@ -146,18 +147,39 @@ export default function LoginPage() {
     setAuthError(null);
 
     try {
+      // Clear any stale Firebase Client Auth user so UIDs cannot mismatch the dev test session
+      if (isClientFirebaseConfigured) {
+        try {
+          await signOut(getClientAuth());
+        } catch {
+          // Non-fatal
+        }
+      }
+
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ devRole: role }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: { error?: string; redirectTo?: string } = {};
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(
+            res.ok
+              ? "Authentication server returned an invalid response."
+              : `Failed to switch role (HTTP ${res.status}).`
+          );
+        }
+      }
       if (!res.ok) {
         throw new Error(data.error || "Failed to switch role.");
       }
 
-      router.push(data.redirectTo);
+      router.push(data.redirectTo || "/citizen/dashboard");
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to establish test session.";
@@ -167,16 +189,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9F5]">
+    <div className="min-h-screen flex flex-col bg-[#F7F5EE]">
       <TopNav showAuthLinks={false} />
 
-      <main className="flex-1 flex items-center justify-center p-4 py-8">
-        <div className="w-full max-w-sm space-y-4">
-          <div className="text-center space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-[#30352D]">
+      <main className="flex-1 flex items-center justify-center p-4 py-10">
+        <div className="w-full max-w-sm space-y-5">
+          <div className="text-center space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#718267]">
+              CivicTrack · Official Portal
+            </p>
+            <h1 className="font-serif text-2xl font-semibold tracking-tight text-[#1B3A2E]">
               Municipal Portal Access
             </h1>
-            <p className="text-xs text-[#74796F]">
+            <p className="text-xs text-[#77796F]">
               Sign in with your registered account credentials
             </p>
           </div>
@@ -184,7 +209,7 @@ export default function LoginPage() {
           <Card>
             <form onSubmit={handleEmailSubmit}>
               <CardHeader className="space-y-1">
-                <CardTitle className="text-sm">Account Sign In</CardTitle>
+                <CardTitle className="text-base">Account Sign In</CardTitle>
                 <CardDescription>
                   Access your citizen or departmental workspace
                 </CardDescription>
@@ -192,7 +217,7 @@ export default function LoginPage() {
 
               <CardContent className="space-y-3.5">
                 {authError && (
-                  <div className="rounded-md border border-[#F3D8D8] bg-[#FBF0F0] p-2.5 text-xs text-[#9B3B3B] flex items-start gap-2">
+                  <div className="rounded-sm border border-[#E4C9C6] bg-[#F4E8E7] p-2.5 text-xs text-[#8B342E] flex items-start gap-2">
                     <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                     <span className="leading-snug">{authError}</span>
                   </div>
@@ -217,7 +242,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowForgotDialog(true)}
-                      className="text-[11px] text-[#536247] hover:underline cursor-pointer"
+                      className="text-[11px] text-[#1B3A2E] hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -246,10 +271,10 @@ export default function LoginPage() {
                 {/* Google Sign-in */}
                 <div className="relative my-2">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-[#E5E8DF]" />
+                    <span className="w-full border-t border-[#DDD9CE]" />
                   </div>
                   <div className="relative flex justify-center text-[10px] uppercase">
-                    <span className="bg-white px-2 text-[#74796F]">
+                    <span className="bg-[#FAF8F2] px-2 text-[#77796F]">
                       or continue with
                     </span>
                   </div>
@@ -284,18 +309,19 @@ export default function LoginPage() {
                 </Button>
               </CardContent>
 
-              <CardFooter className="flex flex-col space-y-3 border-t border-[#E5E8DF] pt-4 text-center">
-                <div className="text-xs text-[#74796F]">
+              <CardFooter className="flex flex-col space-y-3 border-t border-[#DDD9CE] pt-4 text-center">
+                <div className="text-xs text-[#77796F]">
                   Don&apos;t have an account?{" "}
                   <Link
                     href="/register"
-                    className="font-semibold text-[#536247] hover:underline"
+                    className="font-semibold text-[#1B3A2E] hover:underline"
                   >
                     Register as Citizen
                   </Link>
                 </div>
 
-                {/* Role Testing Bar */}
+                {/* Role Testing Bar (Development only) */}
+                {process.env.NODE_ENV !== "production" && (
                 <div className="rounded-md border border-[#E5E8DF] bg-[#F8F9F5] p-2.5 text-left w-full space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-[#74796F]">
@@ -332,6 +358,7 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
+                )}
               </CardFooter>
             </form>
           </Card>

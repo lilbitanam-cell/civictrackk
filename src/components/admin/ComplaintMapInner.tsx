@@ -17,18 +17,18 @@ interface Props {
 }
 
 const STATUS_HEX: Record<string, string> = {
-  submitted: "#9CA3AF",
-  under_review: "#D97706",
-  assigned: "#788568",
-  in_progress: "#536247",
-  resolution_submitted: "#2563EB",
-  resolved: "#16A34A",
-  closed: "#30352D",
-  rejected: "#DC2626",
+  submitted: "#77796F",
+  under_review: "#B45309",
+  assigned: "#718267",
+  in_progress: "#263D30",
+  resolution_submitted: "#0369A1",
+  resolved: "#1B3A2E",
+  closed: "#252820",
+  rejected: "#8B342E",
 };
 
 function createCustomIcon(status: string, isSelected: boolean) {
-  const color = STATUS_HEX[status] || "#788568";
+  const color = STATUS_HEX[status] || "#718267";
   const size = isSelected ? 34 : 26;
   const border = isSelected ? "3px solid #000" : "2px solid #FFFFFF";
 

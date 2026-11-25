@@ -6,17 +6,20 @@ import {
 } from "@/lib/auth/session";
 import { ROLE_HOME_ROUTES } from "@/lib/auth";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
   const session = sessionCookie?.value
-    ? verifySessionToken(sessionCookie.value)
+    ? await verifySessionToken(sessionCookie.value)
     : null;
 
   // 1. If user is already authenticated and visits /login or /register, redirect to their role dashboard
   if (session && (pathname === "/login" || pathname === "/register")) {
-    const targetUrl = new URL(ROLE_HOME_ROUTES[session.role] || "/citizen/dashboard", request.url);
+    const targetUrl = new URL(
+      ROLE_HOME_ROUTES[session.role] || "/citizen/dashboard",
+      request.url
+    );
     return NextResponse.redirect(targetUrl);
   }
 

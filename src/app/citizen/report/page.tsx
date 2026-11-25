@@ -16,20 +16,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getClientAuth, getClientStorage } from "@/lib/firebase/config";
+import {
+  getClientAuth,
+  isClientFirebaseConfigured,
+} from "@/lib/firebase/config";
+import {
+  STORAGE_LIMITS,
+  resolveImageMimeType,
+  uploadImageWithFallback,
+} from "@/lib/firebase/storage";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { createComplaint } from "@/services";
 import type { ComplaintCategory, ComplaintPriority } from "@/types/database";
 import {
   Camera,
-  UploadCloud,
   X,
-  MapPin,
   AlertCircle,
-  CheckCircle2,
-  FileText,
   Info,
+  Loader2,
 } from "lucide-react";
 
 const MapPicker = dynamic(() => import("@/components/shared/MapPicker"), {
@@ -59,6 +62,8 @@ const PRIORITIES: { value: ComplaintPriority; label: string }[] = [
   { value: "urgent", label: "Urgent" },
 ];
 
+const MAX_REPORT_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB (auto-compressed before upload)
+
 interface FormErrors {
   title?: string;
   description?: string;
@@ -77,13 +82,25 @@ interface FormValues {
   address: string;
   city: string;
   landmark: string;
+  phone: string;
+}
+
+interface SessionUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  role: string;
 }
 
 export default function ReportComplaintPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const errorBannerRef = useRef<HTMLDivElement>(null);
 
   const [user, setUser] = useState<User | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [form, setForm] = useState<FormValues>({
     title: "",
     description: "",
@@ -92,18 +109,61 @@ export default function ReportComplaintPage() {
     address: "",
     city: "",
     landmark: "",
+    phone: "",
   });
   const [location, setLocation] = useState({ lat: 28.6139, lng: 77.209 });
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState<string>("Submitting Grievance...");
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   useEffect(() => {
-    const auth = getClientAuth();
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsub();
+    let active = true;
+
+    // Pre-fill category if linked from homepage category cards
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get("category") as ComplaintCategory | null;
+      if (cat && CATEGORIES.some((c) => c.value === cat)) {
+        setForm((prev) => (prev.category ? prev : { ...prev, category: cat }));
+      }
+    } catch {}
+
+    // 1. Verify server session cookie (works for live Firebase & devRole mode)
+    fetch("/api/auth/session")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active) return;
+        if (data?.authenticated && data.user) {
+          setSessionUser(data.user);
+        }
+      })
+      .catch(() => {
+        // Non-fatal; Firebase client auth may still resolve
+      })
+      .finally(() => {
+        if (active) setAuthChecked(true);
+      });
+
+    // 2. Also listen to Firebase Client Auth if configured
+    let unsub: (() => void) | undefined;
+    if (isClientFirebaseConfigured) {
+      try {
+        const auth = getClientAuth();
+        unsub = onAuthStateChanged(auth, (u) => {
+          if (active) setUser(u);
+        });
+      } catch (err) {
+        console.warn("Firebase client auth listener error:", err);
+      }
+    }
+
+    return () => {
+      active = false;
+      if (unsub) unsub();
+    };
   }, []);
 
   // Cleanup preview URLs on unmount
@@ -127,20 +187,36 @@ export default function ReportComplaintPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    // Validate count
+    // Reset input so re-selecting the same file works after removing/fixing
+    e.target.value = "";
+
+    if (files.length === 0) return;
+
     if (images.length + files.length > 5) {
-      setErrors((prev) => ({ ...prev, images: "Max 5 images allowed." }));
+      setErrors((prev) => ({ ...prev, images: "Maximum 5 images allowed." }));
       return;
     }
-    // Validate size
-    const oversized = files.filter((f) => f.size > 2 * 1024 * 1024);
-    if (oversized.length > 0) {
+
+    const unsupported = files.filter(
+      (f) => !["image/jpeg", "image/png", "image/webp"].includes(resolveImageMimeType(f))
+    );
+    if (unsupported.length > 0) {
       setErrors((prev) => ({
         ...prev,
-        images: `Some files exceed 2MB limit: ${oversized.map((f) => f.name).join(", ")}`,
+        images: `Unsupported format (${unsupported.map((f) => f.name).join(", ")}). Please upload JPG, PNG, or WebP images only.`,
       }));
       return;
     }
+
+    const oversized = files.filter((f) => f.size > MAX_REPORT_IMAGE_BYTES);
+    if (oversized.length > 0) {
+      setErrors((prev) => ({
+        ...prev,
+        images: `Some files exceed the 5MB limit: ${oversized.map((f) => f.name).join(", ")}`,
+      }));
+      return;
+    }
+
     setErrors((prev) => ({ ...prev, images: undefined }));
     setImages((prev) => [...prev, ...files]);
     const urls = files.map((f) => URL.createObjectURL(f));
@@ -158,91 +234,120 @@ export default function ReportComplaintPage() {
     []
   );
 
+  const showError = (msg: string) => {
+    setGlobalError(msg);
+    requestAnimationFrame(() => {
+      errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    if (!user) {
-      setGlobalError("You must be signed in to report a complaint.");
+    setGlobalError(null);
+
+    if (!validate()) {
+      showError("Please complete all required fields highlighted below before submitting.");
+      return;
+    }
+
+    const activeUid = sessionUser?.uid || user?.uid;
+    if (!activeUid) {
+      showError(
+        authChecked
+          ? "Your session has expired. Please sign in again to submit a grievance."
+          : "Verifying your session, please wait a moment and try again."
+      );
       return;
     }
 
     setSubmitting(true);
-    setGlobalError(null);
 
     try {
-      // 1. Upload images
+      // 1. Upload images (Client Storage with automatic /api/upload fallback)
       let imageUrls: string[] = [];
       if (images.length > 0) {
-        const storage = getClientStorage();
+        setSubmitStage(`Uploading ${images.length} photo${images.length > 1 ? "s" : ""}...`);
         imageUrls = await Promise.all(
-          images.map(async (file) => {
-            const path = `complaintImages/${user.uid}/${Date.now()}_${file.name}`;
-            const storageRef = ref(storage, path);
-            await uploadBytes(storageRef, file);
-            return getDownloadURL(storageRef);
-          })
+          images.map((file) => uploadImageWithFallback(file, "complaintImages"))
         );
       }
 
-      // 2. Find category label
+      // 2. Build sanitized payload (no undefined values)
+      setSubmitStage("Submitting Grievance...");
       const categoryObj = CATEGORIES.find((c) => c.value === form.category);
+      const trimmedLandmark = form.landmark.trim();
+      const locationPayload: {
+        latitude: number;
+        longitude: number;
+        address: string;
+        city: string;
+        landmark?: string;
+      } = {
+        latitude: location.lat,
+        longitude: location.lng,
+        address: form.address.trim(),
+        city: form.city.trim(),
+      };
+      if (trimmedLandmark) {
+        locationPayload.landmark = trimmedLandmark;
+      }
 
-      // 3. Create complaint (direct client write with seamless server API fallback)
-      try {
-        await createComplaint({
+      // 3. Submit via server API route (handles Firestore write, history log, and admin notifications)
+      const res = await fetch("/api/complaints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           title: form.title.trim(),
           description: form.description.trim(),
           category: form.category as ComplaintCategory,
           categoryLabel: categoryObj?.label ?? (form.category as string),
           priority: form.priority as ComplaintPriority,
-          location: {
-            latitude: location.lat,
-            longitude: location.lng,
-            address: form.address.trim(),
-            city: form.city.trim(),
-            landmark: form.landmark.trim() || undefined,
-          },
+          location: locationPayload,
           images: imageUrls,
-          citizenId: user.uid,
-          citizenName: user.displayName ?? user.email ?? "Unknown",
-          citizenPhone: undefined,
-        });
-      } catch (clientCreateErr) {
-        console.warn("Direct Firestore creation failed, falling back to server API endpoint:", clientCreateErr);
-        const res = await fetch("/api/complaints", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: form.title.trim(),
-            description: form.description.trim(),
-            category: form.category as ComplaintCategory,
-            categoryLabel: categoryObj?.label ?? (form.category as string),
-            priority: form.priority as ComplaintPriority,
-            location: {
-              latitude: location.lat,
-              longitude: location.lng,
-              address: form.address.trim(),
-              city: form.city.trim(),
-              landmark: form.landmark.trim() || undefined,
-            },
-            images: imageUrls,
-            citizenId: user.uid,
-            citizenName: user.displayName ?? user.email ?? "Unknown",
-            citizenPhone: undefined,
-          }),
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || "Failed to submit complaint.");
+          citizenId: activeUid,
+          citizenName:
+            sessionUser?.displayName ||
+            user?.displayName ||
+            sessionUser?.email ||
+            user?.email ||
+            "Citizen Resident",
+          ...(form.phone.trim() ? { citizenPhone: form.phone.trim() } : {}),
+        }),
+      });
+
+      const rawText = await res.text();
+      let data: { error?: string; ticketNumber?: string; complaintId?: string } = {};
+      if (rawText) {
+        try {
+          data = JSON.parse(rawText);
+        } catch {
+          throw new Error(
+            res.ok
+              ? "Server returned an unexpected response."
+              : `Submission failed (HTTP ${res.status}). Please try again.`
+          );
         }
       }
 
-      // 4. Redirect with success
-      router.push("/citizen/dashboard?success=complaint_submitted");
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Your session has expired. Please sign in again and retry.");
+        }
+        throw new Error(data.error || `Failed to submit complaint (HTTP ${res.status}).`);
+      }
+
+      // 4. Redirect to dashboard with ticket confirmation and refresh server data
+      const ticketParam = data.ticketNumber
+        ? `&ticket=${encodeURIComponent(data.ticketNumber)}`
+        : "";
+      router.push(`/citizen/dashboard?success=complaint_submitted${ticketParam}`);
+      router.refresh();
     } catch (err: unknown) {
-      console.error(err);
-      setGlobalError(
-        err instanceof Error ? err.message : "Failed to submit complaint. Please try again."
+      console.error("Complaint submission error:", err);
+      showError(
+        err instanceof Error
+          ? err.message
+          : "Failed to submit complaint. Please try again."
       );
       setSubmitting(false);
     }
@@ -266,29 +371,32 @@ export default function ReportComplaintPage() {
         </div>
 
         {/* Municipal Guidance Banner */}
-        <div className="rounded-md border border-[#D8DDD1] bg-[#F1F3EC] p-4 text-xs text-[#536247] flex items-start gap-3">
-          <Info className="h-5 w-5 shrink-0 text-[#788568] mt-0.5" />
+        <div className="rounded-sm border border-[#DDD9CE] bg-[#ECE9DF]/65 p-4 text-xs text-[#263D30] flex items-start gap-3">
+          <Info className="h-5 w-5 shrink-0 text-[#1B3A2E] mt-0.5" />
           <div className="space-y-1">
-            <p className="font-semibold text-[#30352D]">Submission Guidelines</p>
-            <p className="leading-relaxed text-[#536247]">
-              Please provide precise location details and clear photos of the civic defect. Once submitted, your issue is automatically routed to the relevant municipal division with a trackable ticket number.
+            <p className="font-semibold text-[#1B3A2E]">Submission Guidelines</p>
+            <p className="leading-relaxed text-[#77796F]">
+              Please provide clear location details and on-site photographs of the civic defect. Once submitted, your issue is routed to the relevant municipal division with a trackable ticket reference.
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           {globalError && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
+            <div
+              ref={errorBannerRef}
+              className="rounded-sm border border-[#E4C9C6] bg-[#F4E8E7] p-4 text-sm text-[#8B342E] flex items-start gap-2"
+            >
+              <AlertCircle className="h-5 w-5 shrink-0 text-[#8B342E] mt-0.5" />
               <span>{globalError}</span>
             </div>
           )}
 
           {/* Section 1: Issue Details */}
-          <div className="rounded-md border border-[#E5E8DF] bg-white p-5 space-y-4">
-            <div className="border-b border-[#F1F3EC] pb-3">
-              <h3 className="text-sm font-semibold text-[#30352D]">1. Grievance Particulars</h3>
-              <p className="text-xs text-[#74796F] mt-0.5">Specify the issue type, urgency level, and details.</p>
+          <div className="rounded-sm border border-[#DDD9CE] bg-[#FAF8F2] p-5 sm:p-6 space-y-4">
+            <div className="border-b border-[#DDD9CE] pb-3">
+              <h3 className="font-serif text-lg font-semibold text-[#1B3A2E]">1. Grievance Particulars</h3>
+              <p className="text-xs text-[#77796F] mt-0.5">Specify the issue category, urgency level, and details.</p>
             </div>
 
             {/* Title */}
@@ -379,10 +487,10 @@ export default function ReportComplaintPage() {
           </div>
 
           {/* Section 2: Location */}
-          <div className="rounded-md border border-[#E5E8DF] bg-white p-5 space-y-4">
-            <div className="border-b border-[#F1F3EC] pb-3">
-              <h3 className="text-sm font-semibold text-[#30352D]">2. Incident Location</h3>
-              <p className="text-xs text-[#74796F] mt-0.5">Physical address and geo-coordinates for field verification.</p>
+          <div className="rounded-sm border border-[#DDD9CE] bg-[#FAF8F2] p-5 sm:p-6 space-y-4">
+            <div className="border-b border-[#DDD9CE] pb-3">
+              <h3 className="font-serif text-lg font-semibold text-[#1B3A2E]">2. Incident Location &amp; Contact</h3>
+              <p className="text-xs text-[#77796F] mt-0.5">Physical address, map coordinates, and optional callback number for field inspection.</p>
             </div>
 
             <div className="space-y-1.5">
@@ -418,18 +526,31 @@ export default function ReportComplaintPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="landmark" className="text-xs font-medium text-[#30352D]">
+                <Label htmlFor="landmark" className="text-xs font-medium text-[#252820]">
                   Prominent Landmark{" "}
-                  <span className="text-xs text-[#74796F] font-normal">(optional)</span>
+                  <span className="text-xs text-[#77796F] font-normal">(optional)</span>
                 </Label>
                 <Input
                   id="landmark"
                   placeholder="e.g. Opposite Post Office"
                   value={form.landmark}
                   onChange={(e) => setField("landmark", e.target.value)}
-                  className="border-[#E5E8DF] text-sm focus-visible:ring-[#788568]"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-xs font-medium text-[#252820]">
+                Contact Mobile Number{" "}
+                <span className="text-xs text-[#77796F] font-normal">(optional, for field team coordination)</span>
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="e.g. +91 98765 43210"
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value)}
+              />
             </div>
 
             {/* Map */}
@@ -448,33 +569,33 @@ export default function ReportComplaintPage() {
           </div>
 
           {/* Section 3: Photographic Evidence */}
-          <div className="rounded-md border border-[#E5E8DF] bg-white p-5 space-y-4">
-            <div className="border-b border-[#F1F3EC] pb-3">
-              <h3 className="text-sm font-semibold text-[#30352D]">3. Photographic Evidence</h3>
-              <p className="text-xs text-[#74796F] mt-0.5">Attach up to 5 clear on-site photographs (Max 2MB per photo).</p>
+          <div className="rounded-sm border border-[#DDD9CE] bg-[#FAF8F2] p-5 sm:p-6 space-y-4">
+            <div className="border-b border-[#DDD9CE] pb-3">
+              <h3 className="font-serif text-lg font-semibold text-[#1B3A2E]">3. Photographic Evidence</h3>
+              <p className="text-xs text-[#77796F] mt-0.5">Attach up to 5 clear on-site photographs (JPG, PNG, WebP · Max 5MB per photo).</p>
             </div>
 
             <div
-              className="rounded-md border-2 border-dashed border-[#D8DDD1] p-6 text-center cursor-pointer hover:border-[#788568] hover:bg-[#F8F9F5] transition-all"
+              className="rounded-sm border border-dashed border-[#718267] bg-[#F7F5EE] p-6 text-center cursor-pointer hover:bg-[#ECE9DF]/60 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
                 multiple
                 className="hidden"
                 onChange={handleImageChange}
               />
               <div className="flex flex-col items-center justify-center gap-2">
-                <div className="h-10 w-10 rounded-full bg-[#F1F3EC] flex items-center justify-center text-[#788568]">
+                <div className="h-10 w-10 rounded-sm bg-[#ECE9DF] flex items-center justify-center text-[#1B3A2E]">
                   <Camera className="h-5 w-5" />
                 </div>
-                <p className="text-xs font-semibold text-[#30352D]">
+                <p className="text-xs font-semibold text-[#252820]">
                   Click to select photos or take snapshot
                 </p>
-                <p className="text-[11px] text-[#74796F]">
-                  JPEG, PNG or WebP · Maximum 5 images · Up to 2MB each
+                <p className="text-[11px] text-[#77796F]">
+                  JPEG, PNG or WebP · Maximum 5 images · Up to 5MB each
                 </p>
               </div>
             </div>
@@ -518,7 +639,6 @@ export default function ReportComplaintPage() {
             <Button
               type="button"
               variant="outline"
-              className="border-[#E5E8DF] text-[#30352D] hover:bg-[#F1F3EC] text-sm"
               onClick={() => router.back()}
               disabled={submitting}
             >
@@ -527,9 +647,16 @@ export default function ReportComplaintPage() {
             <Button
               type="submit"
               disabled={submitting}
-              className="bg-[#788568] hover:bg-[#536247] text-white text-sm px-6"
+              className="px-6"
             >
-              {submitting ? "Submitting Grievance..." : "Submit Grievance Report"}
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {submitStage}
+                </span>
+              ) : (
+                "Submit Grievance Report"
+              )}
             </Button>
           </div>
         </form>

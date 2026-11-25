@@ -17,7 +17,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-[#30352D]/40 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-[#252820]/45 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -34,13 +34,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-[#E5E8DF] bg-white p-6 shadow-md duration-150 sm:rounded-md",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-[#DDD9CE] bg-[#FAF8F2] p-6 shadow-sm duration-150 sm:rounded-sm",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm p-1 text-[#74796F] hover:bg-[#F1F3EC] hover:text-[#30352D] focus:outline-none focus:ring-1 focus:ring-[#788568]">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm p-1 text-[#77796F] hover:bg-[#ECE9DF] hover:text-[#252820] focus:outline-none focus:ring-1 focus:ring-[#1B3A2E]">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -84,7 +84,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-base font-semibold leading-none tracking-tight text-[#30352D]",
+      "font-serif text-xl font-normal leading-tight tracking-tight text-[#252820]",
       className
     )}
     {...props}
@@ -98,7 +98,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-xs text-[#74796F]", className)}
+    className={cn("text-xs leading-relaxed text-[#77796F]", className)}
     {...props}
   />
 ));

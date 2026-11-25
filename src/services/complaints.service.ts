@@ -112,6 +112,23 @@ export async function getComplaints(
   );
 }
 
+/** Recursively strip undefined properties because Firestore rejects undefined values. */
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as unknown as T;
+  }
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v !== undefined) {
+        out[k] = stripUndefined(v);
+      }
+    }
+    return out as T;
+  }
+  return value;
+}
+
 export async function createComplaint(
   data: Omit<
     ComplaintDocument,
@@ -128,9 +145,10 @@ export async function createComplaint(
   const complaintsRef = collection(db, COLLECTION_NAME);
 
   const ticketNumber = generateTicketNumber();
+  const cleanData = stripUndefined(data);
 
   const docRef = await addDoc(complaintsRef, {
-    ...data,
+    ...cleanData,
     ticketNumber,
     status: "submitted" as ComplaintStatus,
     upvotesCount: 0,

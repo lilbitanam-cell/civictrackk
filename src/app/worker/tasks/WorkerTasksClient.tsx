@@ -22,36 +22,36 @@ const STATUS_CONFIG: Record<
 > = {
   pending: {
     label: "Pending Action",
-    badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
-    dotClass: "bg-amber-500",
+    badgeClass: "bg-amber-50/80 text-amber-900 border-amber-200/80",
+    dotClass: "bg-amber-600",
   },
   accepted: {
     label: "Acknowledged",
-    badgeClass: "bg-[#E9EDE4] text-[#3E4B37] border-[#B4BBA5]",
-    dotClass: "bg-[#536247]",
+    badgeClass: "bg-[#ECE9DF] text-[#1B3A2E] border-[#718267]",
+    dotClass: "bg-[#1B3A2E]",
   },
   in_progress: {
     label: "In Progress",
-    badgeClass: "bg-[#788568] text-white border-transparent",
+    badgeClass: "bg-[#718267] text-white border-transparent",
     dotClass: "bg-white",
   },
   completed: {
     label: "Submitted for Audit",
-    badgeClass: "bg-blue-50 text-blue-800 border-blue-200",
-    dotClass: "bg-blue-500",
+    badgeClass: "bg-sky-50/80 text-sky-900 border-sky-200",
+    dotClass: "bg-sky-600",
   },
   on_hold: {
     label: "On Hold",
-    badgeClass: "bg-neutral-100 text-neutral-700 border-neutral-300",
-    dotClass: "bg-neutral-500",
+    badgeClass: "bg-[#ECE9DF] text-[#77796F] border-[#DDD9CE]",
+    dotClass: "bg-[#77796F]",
   },
 };
 
 const PRIORITY_BADGES: Record<string, string> = {
-  low: "bg-[#F8F9F5] text-[#74796F] border-[#E5E8DF]",
-  medium: "bg-amber-50 text-amber-800 border-amber-200",
-  high: "bg-orange-50 text-orange-800 border-orange-200 font-medium",
-  urgent: "bg-red-50 text-red-700 border-red-200 font-bold",
+  low: "bg-[#F7F5EE] text-[#77796F] border-[#DDD9CE]",
+  medium: "bg-amber-50/80 text-amber-900 border-amber-200/80",
+  high: "bg-orange-50/80 text-orange-900 border-orange-200/80 font-medium",
+  urgent: "bg-[#FAF0EE] text-[#8B342E] border-[#E5C9C6] font-bold",
 };
 
 export default function WorkerTasksClient({
@@ -85,20 +85,20 @@ export default function WorkerTasksClient({
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
       {/* Search & Filter Toolbar */}
-      <div className="bg-white p-3.5 rounded-lg border border-[#E5E8DF] flex flex-wrap items-center justify-between gap-3 shadow-xs">
+      <div className="bg-[#FAF8F2] p-3.5 rounded-sm border border-[#DDD9CE] flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[240px]">
           <div className="relative flex-1 min-w-[180px] max-w-sm">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#74796F]" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#77796F]" />
             <Input
               placeholder="Search title, ticket, or ward..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 border-[#E5E8DF] text-xs sm:text-sm focus-visible:ring-[#788568]"
+              className="pl-9 border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus-visible:ring-[#1B3A2E]"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36 sm:w-40 border-[#E5E8DF] text-xs sm:text-sm focus:ring-[#788568]">
+            <SelectTrigger className="w-36 sm:w-40 border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus:ring-[#1B3A2E]">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -111,7 +111,7 @@ export default function WorkerTasksClient({
           </Select>
 
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-32 sm:w-36 border-[#E5E8DF] text-xs sm:text-sm focus:ring-[#788568]">
+            <SelectTrigger className="w-32 sm:w-36 border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus:ring-[#1B3A2E]">
               <SelectValue placeholder="All Priorities" />
             </SelectTrigger>
             <SelectContent>
@@ -125,8 +125,8 @@ export default function WorkerTasksClient({
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          <span className="text-xs text-[#74796F]">
-            Tasks: <strong className="text-[#30352D]">{filtered.length}</strong> of {tasks.length}
+          <span className="text-xs text-[#77796F]">
+            Tasks: <strong className="text-[#252820]">{filtered.length}</strong> of {tasks.length}
           </span>
           {isFiltered && (
             <Button
@@ -137,7 +137,7 @@ export default function WorkerTasksClient({
                 setStatusFilter("all");
                 setPriorityFilter("all");
               }}
-              className="text-xs text-[#536247] hover:text-[#30352D] h-8 px-2 flex items-center gap-1"
+              className="text-xs text-[#1B3A2E] hover:text-[#252820] h-8 px-2 flex items-center gap-1"
             >
               <X className="h-3.5 w-3.5" /> Clear
             </Button>
@@ -160,13 +160,27 @@ export default function WorkerTasksClient({
               dotClass: "bg-gray-400",
             };
 
-            const dateStr = task.createdAt
-              ? typeof (task.createdAt as any)?.toDate === "function"
-                ? (task.createdAt as any).toDate()
-                : (task.createdAt as any)?.seconds
-                ? new Date((task.createdAt as any).seconds * 1000)
-                : new Date(task.createdAt as string)
-              : null;
+            let formattedTime = "";
+            try {
+              if (task.createdAt) {
+                const raw = task.createdAt as any;
+                const d =
+                  typeof raw === "string"
+                    ? new Date(raw)
+                    : typeof raw?.toDate === "function"
+                    ? raw.toDate()
+                    : typeof raw?.seconds === "number"
+                    ? new Date(raw.seconds * 1000)
+                    : typeof raw?._seconds === "number"
+                    ? new Date(raw._seconds * 1000)
+                    : new Date(raw);
+                if (!Number.isNaN(d.getTime())) {
+                  formattedTime = formatDistanceToNow(d, { addSuffix: true });
+                }
+              }
+            } catch {
+              formattedTime = "";
+            }
 
             return (
               <Link
@@ -175,21 +189,21 @@ export default function WorkerTasksClient({
                 className="block group"
               >
                 <div
-                  className={`bg-white border rounded-lg p-4 sm:p-5 hover:border-[#788568] hover:shadow-xs transition-all space-y-3 ${
+                  className={`bg-[#FAF8F2] border rounded-sm p-4 sm:p-5 hover:border-[#718267] transition-all space-y-3 ${
                     task.priority === "urgent"
-                      ? "border-red-200 bg-red-50/20"
-                      : "border-[#E5E8DF]"
+                      ? "border-[#E5C9C6] bg-[#FAF0EE]/50"
+                      : "border-[#DDD9CE]"
                   }`}
                 >
                   {/* Top Badge Strip */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-[#536247] bg-[#F1F3EC] px-2 py-0.5 rounded border border-[#E5E8DF]">
+                      <span className="font-mono text-xs font-medium text-[#1B3A2E] bg-[#ECE9DF] px-2 py-0.5 rounded-sm border border-[#DDD9CE]">
                         {task.complaintTicketNumber || `#${task.id.slice(0, 6)}`}
                       </span>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded border uppercase ${
-                          PRIORITY_BADGES[task.priority] || "bg-gray-100"
+                        className={`text-[10px] px-2 py-0.5 rounded-sm border uppercase ${
+                          PRIORITY_BADGES[task.priority] || "bg-[#ECE9DF]"
                         }`}
                       >
                         {task.priority}
@@ -197,7 +211,7 @@ export default function WorkerTasksClient({
                     </div>
 
                     <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border text-xs font-medium ${st.badgeClass}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm border text-xs font-medium ${st.badgeClass}`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${st.dotClass}`} />
                       {st.label}
@@ -206,32 +220,32 @@ export default function WorkerTasksClient({
 
                   {/* Title & Category */}
                   <div>
-                    <h3 className="text-sm sm:text-base font-semibold text-[#30352D] group-hover:text-[#536247] transition-colors">
+                    <h3 className="font-serif text-base sm:text-lg font-medium text-[#252820] group-hover:text-[#1B3A2E] transition-colors">
                       {task.complaintTitle}
                     </h3>
-                    <div className="flex items-center gap-3 text-xs text-[#74796F] mt-1">
+                    <div className="flex items-center gap-3 text-xs text-[#77796F] mt-1">
                       <span className="capitalize">
                         {task.complaintCategory?.replace(/_/g, " ")}
                       </span>
-                      {dateStr && (
+                      {formattedTime && (
                         <span className="flex items-center gap-1 text-[11px]">
                           <Clock className="h-3 w-3" />
-                          {formatDistanceToNow(dateStr, { addSuffix: true })}
+                          {formattedTime}
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Location & CTA */}
-                  <div className="flex items-center justify-between pt-2.5 border-t border-[#F1F3EC] text-xs">
-                    <span className="flex items-center gap-1.5 text-[#536247] font-medium truncate">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-[#788568]" />
+                  <div className="flex items-center justify-between pt-2.5 border-t border-[#DDD9CE]/70 text-xs">
+                    <span className="flex items-center gap-1.5 text-[#1B3A2E] font-medium truncate">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-[#718267]" />
                       <span className="truncate">
                         {task.location?.address || "Address unspecified"}
                       </span>
                     </span>
 
-                    <span className="text-xs text-[#536247] font-semibold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">
+                    <span className="text-xs text-[#1B3A2E] font-semibold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">
                       Open Action <ChevronRight className="h-3.5 w-3.5" />
                     </span>
                   </div>

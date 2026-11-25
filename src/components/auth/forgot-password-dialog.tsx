@@ -83,19 +83,19 @@ export function ForgotPasswordDialog({
 
           <div className="py-4 space-y-3">
             {success ? (
-              <div className="rounded-md border border-[#E5E8DF] bg-[#F1F3EC] p-3 text-xs text-[#3E4B37] flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-[#536247] flex-shrink-0 mt-0.5" />
+              <div className="rounded-sm border border-[#DDD9CE] bg-[#ECE9DF] p-3.5 text-xs text-[#263D30] flex items-start gap-2.5">
+                <CheckCircle2 className="h-4 w-4 text-[#1B3A2E] flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-[#30352D]">Instructions Sent</p>
-                  <p className="mt-0.5 text-[#74796F]">
-                    If an account is associated with <span className="font-medium text-[#30352D]">{email}</span>, a secure password reset link has been dispatched to your inbox.
+                  <p className="font-semibold text-[#252820]">Instructions Sent</p>
+                  <p className="mt-0.5 text-[#77796F]">
+                    If an account is associated with <span className="font-medium text-[#252820]">{email}</span>, a secure password reset link has been dispatched to your inbox.
                   </p>
                 </div>
               </div>
             ) : (
               <>
                 {error && (
-                  <div className="rounded-md border border-[#F3D8D8] bg-[#FBF0F0] p-2.5 text-xs text-[#9B3B3B] flex items-start gap-2">
+                  <div className="rounded-sm border border-[#E5C9C6] bg-[#FAF0EE] p-2.5 text-xs text-[#8B342E] flex items-start gap-2">
                     <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
