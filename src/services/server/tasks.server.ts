@@ -3,10 +3,14 @@
  * Use in Server Components and API Routes only.
  */
 import { getAdminDb } from "@/lib/firebase/admin";
+import { serializeFirestoreData } from "./complaints.server";
 import type { WorkerTaskDocument } from "@/types";
 
 function docToTask(id: string, data: FirebaseFirestore.DocumentData): WorkerTaskDocument {
-  return { id, ...data } as WorkerTaskDocument;
+  return {
+    ...serializeFirestoreData(data),
+    id,
+  } as WorkerTaskDocument;
 }
 
 /** Get tasks assigned to a specific worker (server-side) */
@@ -26,8 +30,8 @@ export async function getTasksByWorkerServer(
   const snap = await ref.get();
   const list = snap.docs.map((d) => docToTask(d.id, d.data()));
   list.sort((a: any, b: any) => {
-    const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
-    const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+    const tA = new Date(a.createdAt || 0).getTime() || 0;
+    const tB = new Date(b.createdAt || 0).getTime() || 0;
     return tB - tA;
   });
   return list;

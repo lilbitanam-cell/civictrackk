@@ -36,7 +36,12 @@ export default function DepartmentsPage() {
 
   const loadDepts = () => {
     setLoading(true);
-    getAllDepartments().then(setDepartments).finally(() => setLoading(false));
+    getAllDepartments()
+      .then(setDepartments)
+      .catch((err: unknown) => {
+        setMsg("Error loading departments: " + (err instanceof Error ? err.message : "Unknown error"));
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadDepts(); }, []);
@@ -54,8 +59,16 @@ export default function DepartmentsPage() {
   };
 
   const toggleActive = async (d: DepartmentDocument) => {
-    await updateDepartment(d.id, { isActive: !d.isActive });
-    loadDepts();
+    setBusy(true); setMsg(null);
+    try {
+      await updateDepartment(d.id, { isActive: !d.isActive });
+      setMsg(`Department ${!d.isActive ? "activated" : "deactivated"} successfully.`);
+      loadDepts();
+    } catch (e: unknown) {
+      setMsg("Error: " + (e instanceof Error ? e.message : "Failed to update department"));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -85,17 +98,20 @@ export default function DepartmentsPage() {
   return (
     <AdminLayout>
       <div className="space-y-6 max-w-6xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E8DF]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#DDD9CE]">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#30352D]">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[#718267] font-medium">
+              Organizational Registry
+            </p>
+            <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1B3A2E] mt-1">
               Municipal Departments
             </h1>
-            <p className="text-xs sm:text-sm text-[#74796F] mt-0.5">
+            <p className="text-xs sm:text-sm text-[#77796F] mt-0.5">
               Configure municipal divisions, SLA timeframes, and issue category assignments.
             </p>
           </div>
           <Button
-            className="bg-[#788568] hover:bg-[#536247] text-white text-xs sm:text-sm font-semibold shadow-none"
+            className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-xs sm:text-sm font-medium shadow-none"
             onClick={openCreate}
           >
             + Register Department
@@ -103,99 +119,99 @@ export default function DepartmentsPage() {
         </div>
 
         {msg && (
-          <div className="text-xs sm:text-sm px-4 py-2.5 rounded-md bg-[#E9EDE4] text-[#3E4B37] border border-[#B4BBA5]">
+          <div className="text-xs sm:text-sm px-4 py-2.5 rounded-sm bg-[#ECE9DF] text-[#1B3A2E] border border-[#718267]">
             {msg}
           </div>
         )}
 
         {/* Form Modal / Panel */}
         {showForm && (
-          <div className="bg-white border border-[#E5E8DF] rounded-lg p-5 sm:p-6 space-y-4 max-w-2xl shadow-xs">
-            <div className="border-b border-[#F1F3EC] pb-3">
-              <h2 className="text-sm font-bold text-[#30352D]">
+          <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-5 sm:p-6 space-y-4 max-w-2xl">
+            <div className="border-b border-[#DDD9CE] pb-3">
+              <h2 className="font-serif text-base font-medium text-[#252820]">
                 {editing ? "Modify Department Configuration" : "Register New Municipal Department"}
               </h2>
-              <p className="text-xs text-[#74796F] mt-0.5">
+              <p className="text-xs text-[#77796F] mt-0.5">
                 Set division credentials, contact point, and category routing.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">Department Name</Label>
+                <Label className="text-xs font-medium text-[#77796F]">Department Name</Label>
                 <Input
                   value={form.name}
                   placeholder="e.g. Public Works Department"
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus-visible:ring-[#1B3A2E]"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">Department Code</Label>
+                <Label className="text-xs font-medium text-[#77796F]">Department Code</Label>
                 <Input
                   value={form.code}
                   placeholder="e.g. PWD-01"
                   onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm font-mono focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm font-mono focus-visible:ring-[#1B3A2E]"
                 />
               </div>
 
               <div className="sm:col-span-2 space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">Description</Label>
+                <Label className="text-xs font-medium text-[#77796F]">Description</Label>
                 <Textarea
                   value={form.description}
                   placeholder="Scope of work and responsibilities..."
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm resize-none focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm resize-none focus-visible:ring-[#1B3A2E]"
                   rows={2}
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">Head of Department</Label>
+                <Label className="text-xs font-medium text-[#77796F]">Head of Department</Label>
                 <Input
                   value={form.headName}
                   placeholder="Name of Executive Officer"
                   onChange={(e) => setForm((prev) => ({ ...prev, headName: e.target.value }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus-visible:ring-[#1B3A2E]"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">Official Email</Label>
+                <Label className="text-xs font-medium text-[#77796F]">Official Email</Label>
                 <Input
                   type="email"
                   value={form.headEmail}
                   placeholder="officer@municipality.gov.in"
                   onChange={(e) => setForm((prev) => ({ ...prev, headEmail: e.target.value }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus-visible:ring-[#1B3A2E]"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">Helpline / Contact</Label>
+                <Label className="text-xs font-medium text-[#77796F]">Helpline / Contact</Label>
                 <Input
                   value={form.contactNumber}
                   placeholder="+91 11 2345 6789"
                   onChange={(e) => setForm((prev) => ({ ...prev, contactNumber: e.target.value }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm focus-visible:ring-[#1B3A2E]"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-[#74796F]">SLA Resolution Target (Hours)</Label>
+                <Label className="text-xs font-medium text-[#77796F]">SLA Resolution Target (Hours)</Label>
                 <Input
                   type="number"
                   value={form.slaHours}
                   onChange={(e) => setForm((prev) => ({ ...prev, slaHours: Number(e.target.value) }))}
-                  className="border-[#E5E8DF] text-xs sm:text-sm w-32 focus-visible:ring-[#788568]"
+                  className="border-[#DDD9CE] bg-[#F7F5EE] text-xs sm:text-sm w-32 focus-visible:ring-[#1B3A2E]"
                 />
               </div>
             </div>
 
-            <div className="space-y-2 pt-1 border-t border-[#F1F3EC]">
-              <Label className="text-xs font-medium text-[#74796F]">
+            <div className="space-y-2 pt-2 border-t border-[#DDD9CE]">
+              <Label className="text-xs font-medium text-[#77796F]">
                 Assigned Grievance Categories (Click to toggle)
               </Label>
               <div className="flex flex-wrap gap-2">
@@ -206,10 +222,10 @@ export default function DepartmentsPage() {
                       key={value}
                       type="button"
                       onClick={() => toggleCategory(value)}
-                      className={`px-2.5 py-1 text-xs rounded-md border font-medium transition-colors ${
+                      className={`px-2.5 py-1 text-xs rounded-sm border font-medium transition-colors ${
                         selected
-                          ? "bg-[#536247] text-white border-[#536247]"
-                          : "border-[#E5E8DF] text-[#74796F] bg-[#F8F9F5] hover:border-[#788568]"
+                          ? "bg-[#1B3A2E] text-[#F7F5EE] border-[#1B3A2E]"
+                          : "border-[#DDD9CE] text-[#77796F] bg-[#F7F5EE] hover:border-[#718267]"
                       }`}
                     >
                       {label}
@@ -221,7 +237,7 @@ export default function DepartmentsPage() {
 
             <div className="flex gap-2.5 pt-2">
               <Button
-                className="bg-[#788568] hover:bg-[#536247] text-white text-xs sm:text-sm font-semibold"
+                className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-xs sm:text-sm font-medium"
                 onClick={handleSubmit}
                 disabled={busy || !form.name.trim()}
               >
@@ -229,7 +245,7 @@ export default function DepartmentsPage() {
               </Button>
               <Button
                 variant="outline"
-                className="text-xs sm:text-sm border-[#E5E8DF] text-[#30352D] hover:bg-[#F1F3EC]"
+                className="text-xs sm:text-sm border-[#DDD9CE] text-[#252820] hover:bg-[#ECE9DF]"
                 onClick={() => setShowForm(false)}
               >
                 Cancel
@@ -240,50 +256,50 @@ export default function DepartmentsPage() {
 
         {/* Table */}
         {loading ? (
-          <p className="text-xs text-[#74796F]">Loading departments registry...</p>
+          <p className="text-xs text-[#77796F]">Loading departments registry...</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-[#E5E8DF] bg-white shadow-xs">
+          <div className="overflow-x-auto rounded-sm border border-[#DDD9CE] bg-[#FAF8F2]">
             <table className="min-w-full text-xs text-left">
-              <thead className="bg-[#F8F9F5] text-[#30352D] border-b border-[#E5E8DF]">
+              <thead className="bg-[#ECE9DF]/60 text-[#252820] border-b border-[#DDD9CE]">
                 <tr>
-                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#74796F]">Department</th>
-                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#74796F]">Code</th>
-                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#74796F]">SLA Target</th>
-                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#74796F]">Categories</th>
-                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#74796F]">Status</th>
-                  <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[11px] text-[#74796F]">Actions</th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#77796F]">Department</th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#77796F]">Code</th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#77796F]">SLA Target</th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#77796F]">Categories</th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-[11px] text-[#77796F]">Status</th>
+                  <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[11px] text-[#77796F]">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E8DF]">
+              <tbody className="divide-y divide-[#DDD9CE]">
                 {departments.map((d) => (
-                  <tr key={d.id} className="hover:bg-[#F8F9F5] transition-colors">
+                  <tr key={d.id} className="hover:bg-[#ECE9DF]/40 transition-colors">
                     <td className="px-4 py-3.5">
-                      <p className="text-xs font-semibold text-[#30352D]">{d.name}</p>
+                      <p className="text-xs font-semibold text-[#252820]">{d.name}</p>
                       {d.headName && (
-                        <p className="text-[11px] text-[#74796F] mt-0.5">Head: {d.headName}</p>
+                        <p className="text-[11px] text-[#77796F] mt-0.5">Head: {d.headName}</p>
                       )}
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="font-mono text-[11px] text-[#536247] bg-[#F1F3EC] px-2 py-0.5 rounded border border-[#E5E8DF]">
+                      <span className="font-mono text-[11px] text-[#1B3A2E] bg-[#ECE9DF] px-2 py-0.5 rounded-sm border border-[#DDD9CE]">
                         {d.code}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 text-[#30352D] font-medium">
+                    <td className="px-4 py-3.5 text-[#252820] font-medium">
                       {d.slaHours} hours
                     </td>
-                    <td className="px-4 py-3.5 text-[#74796F]">
+                    <td className="px-4 py-3.5 text-[#77796F]">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {d.categories && d.categories.length > 0 ? (
                           d.categories.map((cat) => (
                             <span
                               key={cat}
-                              className="px-1.5 py-0.5 rounded text-[10px] bg-[#F1F3EC] text-[#536247] capitalize"
+                              className="px-1.5 py-0.5 rounded-sm text-[10px] bg-[#ECE9DF] text-[#263D30] capitalize"
                             >
                               {cat.replace(/_/g, " ")}
                             </span>
                           ))
                         ) : (
-                          <span className="text-[11px] text-[#74796F]">All categories</span>
+                          <span className="text-[11px] text-[#77796F]">All categories</span>
                         )}
                       </div>
                     </td>
@@ -291,13 +307,13 @@ export default function DepartmentsPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
                           d.isActive
-                            ? "bg-[#E9EDE4] text-[#3E4B37] border border-[#B4BBA5]"
-                            : "bg-[#F1F3EC] text-[#74796F] border border-[#E5E8DF]"
+                            ? "bg-[#ECE9DF] text-[#1B3A2E] border border-[#718267]"
+                            : "bg-[#F7F5EE] text-[#77796F] border border-[#DDD9CE]"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            d.isActive ? "bg-[#536247]" : "bg-neutral-400"
+                            d.isActive ? "bg-[#1B3A2E]" : "bg-[#77796F]/60"
                           }`}
                         />
                         {d.isActive ? "Active" : "Inactive"}
@@ -308,7 +324,7 @@ export default function DepartmentsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs border-[#E5E8DF] hover:bg-[#F1F3EC] text-[#30352D] h-7 px-2.5"
+                          className="text-xs border-[#DDD9CE] hover:bg-[#ECE9DF] text-[#252820] h-7 px-2.5"
                           onClick={() => openEdit(d)}
                         >
                           Edit
@@ -318,8 +334,8 @@ export default function DepartmentsPage() {
                           size="sm"
                           className={`text-xs h-7 px-2.5 ${
                             d.isActive
-                              ? "border-red-200 text-red-700 hover:bg-red-50"
-                              : "border-[#E5E8DF] text-[#536247] hover:bg-[#F1F3EC]"
+                              ? "border-[#E5C9C6] text-[#8B342E] hover:bg-[#FAF0EE]"
+                              : "border-[#DDD9CE] text-[#1B3A2E] hover:bg-[#ECE9DF]"
                           }`}
                           onClick={() => toggleActive(d)}
                         >

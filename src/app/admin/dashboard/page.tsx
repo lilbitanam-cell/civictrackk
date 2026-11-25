@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
   FileText,
@@ -25,21 +26,21 @@ import {
 import AdminDashboardCharts from "@/components/admin/AdminDashboardCharts";
 
 const STATUS_BADGES: Record<string, string> = {
-  submitted: "bg-[#E9EDE4] text-[#30352D]",
-  under_review: "bg-amber-50 text-amber-800 border border-amber-200",
-  assigned: "bg-[#B4BBA5] text-[#30352D]",
-  in_progress: "bg-[#788568] text-white",
-  resolution_submitted: "bg-blue-50 text-blue-800 border border-blue-200 font-semibold",
-  resolved: "bg-[#3E4B37] text-white",
-  closed: "bg-[#30352D] text-white",
-  rejected: "border border-red-200 text-red-700 bg-red-50",
+  submitted: "bg-[#ECE9DF] text-[#252820] border border-[#DDD9CE]",
+  under_review: "bg-amber-50/80 text-amber-900 border border-amber-200",
+  assigned: "bg-[#ECE9DF] text-[#1B3A2E] border border-[#B4BBA5]",
+  in_progress: "bg-[#718267] text-white",
+  resolution_submitted: "bg-sky-50/80 text-sky-900 border border-sky-200 font-semibold",
+  resolved: "bg-[#1B3A2E] text-[#F7F5EE]",
+  closed: "bg-[#252820] text-[#F7F5EE]",
+  rejected: "border border-[#E5C9C6] text-[#8B342E] bg-[#FAF0EE]",
 };
 
 const PRIORITY_BADGES: Record<string, string> = {
-  low: "bg-gray-100 text-gray-700",
-  medium: "bg-amber-50 text-amber-700 border-amber-200",
-  high: "bg-orange-50 text-orange-700 border-orange-200 font-medium",
-  urgent: "bg-red-50 text-red-700 border-red-200 font-semibold",
+  low: "bg-[#F7F5EE] text-[#77796F] border border-[#DDD9CE]",
+  medium: "bg-amber-50/80 text-amber-900 border border-amber-200",
+  high: "bg-orange-50/80 text-orange-900 border border-orange-200 font-medium",
+  urgent: "bg-[#FAF0EE] text-[#8B342E] border border-[#E5C9C6] font-semibold",
 };
 
 function formatTime(createdAt: any) {
@@ -58,7 +59,9 @@ function formatTime(createdAt: any) {
 
 async function AdminDashboardContent() {
   const session = await getCurrentSession();
-  if (!session) return <p className="text-sm text-[#74796F]">Loading session...</p>;
+  if (!session || session.role !== "admin") {
+    redirect("/unauthorized?reason=admin_required");
+  }
 
   const [stats, recent, highPri] = await Promise.all([
     getAdminComplaintStats(),
@@ -87,17 +90,17 @@ async function AdminDashboardContent() {
   return (
     <div className="space-y-8 max-w-7xl">
       {/* Municipal Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E8DF]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#DDD9CE]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs uppercase font-bold tracking-wider text-[#536247] bg-[#E9EDE4] px-2 py-0.5 rounded">
+            <span className="text-[11px] uppercase font-medium tracking-[0.14em] text-[#718267]">
               Municipal Operations Console
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#30352D] mt-1">
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[#1B3A2E] mt-1">
             Executive Operations Dashboard
           </h1>
-          <p className="text-xs text-[#74796F] mt-0.5">
+          <p className="text-xs text-[#77796F] mt-1">
             Logged in as {session.displayName ?? session.email} · Municipal Administrator
           </p>
         </div>
@@ -107,16 +110,16 @@ async function AdminDashboardContent() {
             <Button
               variant="outline"
               size="sm"
-              className="border-[#E5E8DF] text-xs text-[#30352D] gap-1.5 hover:bg-[#F1F3EC]"
+              className="border-[#DDD9CE] text-xs text-[#252820] gap-1.5 hover:bg-[#ECE9DF]"
             >
-              <MapPin className="h-3.5 w-3.5 text-[#788568]" />
+              <MapPin className="h-3.5 w-3.5 text-[#718267]" />
               <span>Complaint Map</span>
             </Button>
           </Link>
           <Link href="/admin/complaints">
             <Button
               size="sm"
-              className="bg-[#788568] hover:bg-[#536247] text-white text-xs gap-1.5 shadow-none"
+              className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-xs gap-1.5 shadow-none"
             >
               <span>Manage Complaints</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -127,59 +130,59 @@ async function AdminDashboardContent() {
 
       {/* KPI Metrics Strip */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="bg-white border border-[#E5E8DF] rounded-md p-3.5">
+        <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#74796F] uppercase tracking-wide">
+            <span className="text-[11px] font-medium text-[#77796F] uppercase tracking-wider">
               Total Filed
             </span>
-            <FileText className="h-4 w-4 text-[#788568]" />
+            <FileText className="h-4 w-4 text-[#718267]" />
           </div>
-          <p className="text-2xl font-bold text-[#30352D] mt-1">{stats.total}</p>
-          <p className="text-[10px] text-[#74796F] mt-0.5">Cumulative reports</p>
+          <p className="font-serif text-2xl font-semibold text-[#252820] mt-1">{stats.total}</p>
+          <p className="text-[10px] text-[#77796F] mt-0.5">Cumulative reports</p>
         </div>
 
-        <div className="bg-white border border-[#E5E8DF] rounded-md p-3.5">
+        <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#74796F] uppercase tracking-wide">
+            <span className="text-[11px] font-medium text-[#77796F] uppercase tracking-wider">
               Pending Triage
             </span>
-            <Clock className="h-4 w-4 text-amber-600" />
+            <Clock className="h-4 w-4 text-amber-700" />
           </div>
-          <p className="text-2xl font-bold text-amber-700 mt-1">{pendingCount}</p>
-          <p className="text-[10px] text-[#74796F] mt-0.5">Submitted / Under Review</p>
+          <p className="font-serif text-2xl font-semibold text-amber-800 mt-1">{pendingCount}</p>
+          <p className="text-[10px] text-[#77796F] mt-0.5">Submitted / Under Review</p>
         </div>
 
-        <div className="bg-white border border-[#E5E8DF] rounded-md p-3.5">
+        <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#74796F] uppercase tracking-wide">
+            <span className="text-[11px] font-medium text-[#77796F] uppercase tracking-wider">
               Active Field Work
             </span>
-            <Wrench className="h-4 w-4 text-[#536247]" />
+            <Wrench className="h-4 w-4 text-[#1B3A2E]" />
           </div>
-          <p className="text-2xl font-bold text-[#536247] mt-1">{activeCount}</p>
-          <p className="text-[10px] text-[#74796F] mt-0.5">Assigned to workers</p>
+          <p className="font-serif text-2xl font-semibold text-[#1B3A2E] mt-1">{activeCount}</p>
+          <p className="text-[10px] text-[#77796F] mt-0.5">Assigned to workers</p>
         </div>
 
-        <div className="bg-white border border-[#E5E8DF] rounded-md p-3.5">
+        <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#74796F] uppercase tracking-wide">
+            <span className="text-[11px] font-medium text-[#77796F] uppercase tracking-wider">
               Awaiting Approval
             </span>
-            <AlertTriangle className="h-4 w-4 text-blue-600" />
+            <AlertTriangle className="h-4 w-4 text-sky-700" />
           </div>
-          <p className="text-2xl font-bold text-blue-700 mt-1">{verifyCount}</p>
-          <p className="text-[10px] text-[#74796F] mt-0.5">Evidence submitted</p>
+          <p className="font-serif text-2xl font-semibold text-sky-800 mt-1">{verifyCount}</p>
+          <p className="text-[10px] text-[#77796F] mt-0.5">Evidence submitted</p>
         </div>
 
-        <div className="bg-white border border-[#E5E8DF] rounded-md p-3.5 col-span-2 md:col-span-1">
+        <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-4 col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#74796F] uppercase tracking-wide">
+            <span className="text-[11px] font-medium text-[#77796F] uppercase tracking-wider">
               Resolved & Closed
             </span>
-            <CheckCircle2 className="h-4 w-4 text-[#3E4B37]" />
+            <CheckCircle2 className="h-4 w-4 text-[#2D5A3F]" />
           </div>
-          <p className="text-2xl font-bold text-[#3E4B37] mt-1">{resolvedCount}</p>
-          <p className="text-[10px] text-[#74796F] mt-0.5">Verified solutions</p>
+          <p className="font-serif text-2xl font-semibold text-[#2D5A3F] mt-1">{resolvedCount}</p>
+          <p className="text-[10px] text-[#77796F] mt-0.5">Verified solutions</p>
         </div>
       </div>
 
@@ -193,30 +196,30 @@ async function AdminDashboardContent() {
       {/* Data Section: High-Priority Table & Recent Filings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* High-Priority / Urgent Table (2 cols on lg) */}
-        <div className="lg:col-span-2 bg-white rounded-md border border-[#E5E8DF] overflow-hidden">
-          <div className="p-4 border-b border-[#E5E8DF] flex items-center justify-between bg-[#F8F9F5]">
+        <div className="lg:col-span-2 bg-[#FAF8F2] rounded-sm border border-[#DDD9CE] overflow-hidden">
+          <div className="p-4 border-b border-[#DDD9CE] flex items-center justify-between bg-[#ECE9DF]/60">
             <div className="flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-red-600" />
-              <h2 className="text-sm font-semibold text-[#30352D]">
+              <ShieldAlert className="h-4 w-4 text-[#8B342E]" />
+              <h2 className="font-serif text-base font-medium text-[#252820]">
                 Urgent & High-Priority Matters
               </h2>
             </div>
             <Link
               href="/admin/complaints"
-              className="text-xs font-medium text-[#536247] hover:underline"
+              className="text-xs font-medium text-[#1B3A2E] hover:underline"
             >
               Filter table →
             </Link>
           </div>
 
           {highPri.length === 0 ? (
-            <div className="p-8 text-center text-xs text-[#74796F]">
+            <div className="p-8 text-center text-xs text-[#77796F]">
               No urgent complaints flagged in the system.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-[#F8F9F5] text-[#74796F] border-b border-[#E5E8DF]">
+                <thead className="bg-[#ECE9DF]/40 text-[#77796F] border-b border-[#DDD9CE]">
                   <tr>
                     <th className="py-2.5 px-3 font-medium">Ticket</th>
                     <th className="py-2.5 px-3 font-medium">Title</th>
@@ -226,21 +229,21 @@ async function AdminDashboardContent() {
                     <th className="py-2.5 px-3 text-right font-medium">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E5E8DF]">
+                <tbody className="divide-y divide-[#DDD9CE]">
                   {highPri.map((c) => (
-                    <tr key={c.id} className="hover:bg-[#F8F9F5] transition-colors">
-                      <td className="py-2.5 px-3 font-mono text-[11px] text-[#536247] font-medium">
+                    <tr key={c.id} className="hover:bg-[#ECE9DF]/40 transition-colors">
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-[#1B3A2E] font-medium">
                         {(c as any).ticketNumber || `#${c.id.slice(0, 6)}`}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-[#30352D] max-w-[180px] truncate">
+                      <td className="py-2.5 px-3 font-medium text-[#252820] max-w-[180px] truncate">
                         {c.title}
                       </td>
-                      <td className="py-2.5 px-3 text-[#74796F] capitalize">
+                      <td className="py-2.5 px-3 text-[#77796F] capitalize">
                         {c.category?.replace(/_/g, " ")}
                       </td>
                       <td className="py-2.5 px-3">
                         <span
-                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] uppercase ${
+                          className={`inline-block px-1.5 py-0.5 rounded-sm text-[10px] uppercase ${
                             PRIORITY_BADGES[c.priority || "medium"]
                           }`}
                         >
@@ -250,7 +253,7 @@ async function AdminDashboardContent() {
                       <td className="py-2.5 px-3">
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-[10px] capitalize ${
-                            STATUS_BADGES[c.status || "submitted"] || "bg-gray-100"
+                            STATUS_BADGES[c.status || "submitted"] || "bg-[#ECE9DF]"
                           }`}
                         >
                           {(c.status || "submitted").replace(/_/g, " ")}
@@ -261,7 +264,7 @@ async function AdminDashboardContent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-6 text-[11px] px-2 border-[#E5E8DF] text-[#30352D] hover:bg-[#E9EDE4]"
+                            className="h-6 text-[11px] px-2 border-[#DDD9CE] text-[#252820] hover:bg-[#ECE9DF]"
                           >
                             Review
                           </Button>
@@ -276,31 +279,31 @@ async function AdminDashboardContent() {
         </div>
 
         {/* Recent Filings Feed (1 col on lg) */}
-        <div className="bg-white rounded-md border border-[#E5E8DF] p-4 flex flex-col justify-between">
+        <div className="bg-[#FAF8F2] rounded-sm border border-[#DDD9CE] p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-[#E5E8DF]">
-              <h2 className="text-sm font-semibold text-[#30352D]">Recent Filings</h2>
-              <span className="text-[11px] text-[#74796F]">Newest reports</span>
+            <div className="flex items-center justify-between pb-3 border-b border-[#DDD9CE]">
+              <h2 className="font-serif text-base font-medium text-[#252820]">Recent Filings</h2>
+              <span className="text-[11px] text-[#77796F]">Newest reports</span>
             </div>
 
-            <div className="divide-y divide-[#F1F3EC] mt-1">
+            <div className="divide-y divide-[#DDD9CE]/70 mt-1">
               {recent.map((c) => (
                 <Link
                   key={c.id}
                   href={`/admin/complaints/${c.id}`}
-                  className="py-2.5 flex items-start justify-between gap-2 block group hover:bg-[#F8F9F5] px-1 rounded transition-colors"
+                  className="py-2.5 flex items-start justify-between gap-2 block group hover:bg-[#ECE9DF]/50 px-1.5 rounded-sm transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-[#30352D] group-hover:text-[#536247] truncate">
+                    <p className="text-xs font-medium text-[#252820] group-hover:text-[#1B3A2E] truncate">
                       {c.title}
                     </p>
-                    <p className="text-[11px] text-[#74796F] capitalize mt-0.5">
+                    <p className="text-[11px] text-[#77796F] capitalize mt-0.5">
                       {c.category?.replace(/_/g, " ")} · {formatTime(c.createdAt)}
                     </p>
                   </div>
                   <span
                     className={`shrink-0 inline-block px-1.5 py-0.5 rounded-full text-[9px] uppercase font-semibold ${
-                      STATUS_BADGES[c.status || "submitted"] || "bg-gray-100"
+                      STATUS_BADGES[c.status || "submitted"] || "bg-[#ECE9DF]"
                     }`}
                   >
                     {(c.status || "submitted").replace(/_/g, " ")}
@@ -310,12 +313,12 @@ async function AdminDashboardContent() {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#E5E8DF] mt-2">
+          <div className="pt-3 border-t border-[#DDD9CE] mt-2">
             <Link href="/admin/complaints" className="block">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-xs border-[#E5E8DF] text-[#30352D] hover:bg-[#F1F3EC]"
+                className="w-full text-xs border-[#DDD9CE] text-[#252820] hover:bg-[#ECE9DF]"
               >
                 View Complete Registry ({stats.total})
               </Button>

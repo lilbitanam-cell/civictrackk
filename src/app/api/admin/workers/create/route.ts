@@ -12,6 +12,12 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
+    if (!session.isActive) {
+      return NextResponse.json(
+        { error: "Account is deactivated." },
+        { status: 403 }
+      );
+    }
 
     if (!isFirebaseAdminConfigured()) {
       return NextResponse.json(
@@ -20,8 +26,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { email, password, displayName, departmentId, departmentName, phone } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
+    const departmentId = typeof body.departmentId === "string" ? body.departmentId.trim() : "";
+    const departmentName = typeof body.departmentName === "string" ? body.departmentName.trim() : "";
+    const rawPhone = typeof body.phone === "string" ? body.phone.trim() : "";
+    // Firebase Auth requires E.164 format (+[country][number]) without spaces/dashes
+    const normalizedPhone = rawPhone.replace(/[\s()-]/g, "");
+    const authPhoneNumber = normalizedPhone.startsWith("+") ? normalizedPhone : undefined;
 
     if (!email || !password || !displayName) {
       return NextResponse.json(
@@ -41,12 +61,28 @@ export async function POST(request: Request) {
     const adminDb = getAdminDb();
 
     // 2. Create the user in Firebase Auth via Admin SDK
-    const userRecord = await adminAuth.createUser({
-      email,
-      password,
-      displayName,
-      phoneNumber: phone || undefined,
-    });
+    let userRecord;
+    try {
+      userRecord = await adminAuth.createUser({
+        email,
+        password,
+        displayName,
+        phoneNumber: authPhoneNumber,
+      });
+    } catch (createErr: unknown) {
+      // Surface Firebase Auth errors as 400s instead of 500s
+      const errCode = (createErr as any)?.errorInfo?.code || (createErr as any)?.code || "";
+      const errMsg = createErr instanceof Error ? createErr.message : "Failed to create user.";
+      if (
+        errCode === "auth/email-already-exists" ||
+        errCode === "auth/phone-number-already-exists" ||
+        errCode === "auth/invalid-phone-number" ||
+        errCode === "auth/invalid-email"
+      ) {
+        return NextResponse.json({ error: errMsg }, { status: 400 });
+      }
+      throw createErr; // re-throw unexpected errors to the outer catch
+    }
 
     // 3. Set trusted custom claims
     await adminAuth.setCustomUserClaims(userRecord.uid, {
@@ -60,7 +96,7 @@ export async function POST(request: Request) {
       id: userRecord.uid,
       email,
       displayName,
-      phone: phone || "",
+      phone: rawPhone || "",
       role: "worker",
       departmentId: departmentId || "",
       departmentName: departmentName || "",

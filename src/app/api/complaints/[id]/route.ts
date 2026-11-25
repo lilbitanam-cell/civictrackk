@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const session = verifySessionToken(token);
+    const session = await verifySessionToken(token);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const session = verifySessionToken(token);
+    const session = await verifySessionToken(token);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -75,8 +75,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (session.role !== "admin") {
       return NextResponse.json({ error: "Forbidden: admin only" }, { status: 403 });
     }
+    if (!session.isActive) {
+      return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+    }
 
-    const body = await request.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+    }
 
     // Filter only allowed fields
     const updates: Record<string, unknown> = {};

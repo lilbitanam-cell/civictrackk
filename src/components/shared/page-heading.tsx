@@ -19,19 +19,19 @@ export function PageHeading({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 pb-5 border-b border-[#E5E8DF] md:flex-row md:items-center md:justify-between",
+        "flex flex-col gap-2 pb-5 border-b border-[#DDD9CE] md:flex-row md:items-end md:justify-between",
         className
       )}
     >
       <div className="space-y-1">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-xl font-semibold tracking-tight text-[#30352D]">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h1 className="font-serif text-2xl sm:text-[1.75rem] font-semibold tracking-tight text-[#252820]">
             {title}
           </h1>
           {badge}
         </div>
         {description && (
-          <p className="text-sm text-[#74796F] max-w-2xl">{description}</p>
+          <p className="text-sm text-[#77796F] max-w-2xl leading-relaxed">{description}</p>
         )}
       </div>
       {actions && (

@@ -23,7 +23,7 @@ async function Content() {
         description="Track the status of all complaints you've submitted."
         actions={
           <Link href="/citizen/report">
-            <Button className="bg-[#788568] hover:bg-[#536247] text-white text-sm">
+            <Button className="text-sm">
               Report Issue
             </Button>
           </Link>
@@ -36,7 +36,7 @@ async function Content() {
           description="You haven't submitted any complaints. Use the button above to report a civic issue."
           action={
             <Link href="/citizen/report">
-              <Button className="bg-[#788568] hover:bg-[#536247] text-white text-sm">
+              <Button className="text-sm">
                 Report your first issue
               </Button>
             </Link>

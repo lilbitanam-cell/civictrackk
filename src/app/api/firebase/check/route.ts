@@ -3,6 +3,11 @@ import { isClientFirebaseConfigured, firebaseConfig } from "@/lib/firebase/confi
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 
 export async function GET(request: Request) {
+  // Restrict this diagnostic endpoint in production to avoid leaking config state
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not available in production." }, { status: 403 });
+  }
+
   // Accessing request properties ensures dynamic request-time evaluation
   const url = new URL(request.url);
 
