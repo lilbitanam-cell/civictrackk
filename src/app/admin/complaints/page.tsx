@@ -19,9 +19,14 @@ export default function AdminComplaintsPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#30352D]">Complaint Management</h1>
-          <p className="text-sm text-[#74796F] mt-1">
+        <div className="border-b border-[#DDD9CE] pb-4">
+          <p className="text-[11px] uppercase tracking-[0.14em] text-[#718267] font-medium">
+            Grievance Registry
+          </p>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1B3A2E] mt-1">
+            Complaint Management
+          </h1>
+          <p className="text-sm text-[#77796F] mt-1">
             Review, filter and manage all submitted civic complaints.
           </p>
         </div>

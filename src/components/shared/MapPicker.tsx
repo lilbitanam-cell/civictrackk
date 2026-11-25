@@ -38,7 +38,7 @@ export default function MapPicker({ center = { lat: 28.6139, lng: 77.209 }, onCh
 
   useEffect(() => {
     onChange(position);
-  }, [position]);
+  }, [position, onChange]);
 
   return (
     <MapContainerAny center={center} zoom={13} style={{ height: '300px', width: '100%' }}>

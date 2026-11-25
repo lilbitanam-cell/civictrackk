@@ -21,13 +21,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const session = verifySessionToken(token);
+    const session = await verifySessionToken(token);
     if (!session || session.role !== "admin") {
       return NextResponse.json({ error: "Forbidden: admin only" }, { status: 403 });
     }
+    if (!session.isActive) {
+      return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+    }
 
-    const body = await request.json();
-    const { departmentId, departmentName, workerId, workerName, priority, instructions } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    const departmentId = typeof body.departmentId === "string" ? body.departmentId.trim() : "";
+    const departmentName = typeof body.departmentName === "string" ? body.departmentName.trim() : departmentId;
+    const workerId = typeof body.workerId === "string" ? body.workerId.trim() : "";
+    const workerName = typeof body.workerName === "string" ? body.workerName.trim() : "";
+    const priority = typeof body.priority === "string" ? body.priority.trim() : "";
+    const instructions = typeof body.instructions === "string" ? body.instructions.trim() : "";
 
     if (!departmentId || !workerId || !workerName) {
       return NextResponse.json(
@@ -39,6 +53,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const complaint = await getComplaintDocumentByIdServer(complaintId);
     if (!complaint) {
       return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
+    }
+    if (["resolved", "closed", "rejected"].includes(complaint.status)) {
+      return NextResponse.json(
+        { error: `Cannot assign worker when complaint is in "${complaint.status}" status.` },
+        { status: 400 }
+      );
     }
 
     const db = getAdminDb();

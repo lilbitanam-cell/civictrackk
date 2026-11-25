@@ -1,92 +1,86 @@
 import Link from "next/link";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative w-full overflow-hidden bg-white">
-      {/* Two-column layout on large screens */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[520px]">
+    <section className="relative w-full overflow-hidden bg-[#F7F5EE] border-b border-[#DDD9CE]">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {/* Editorial masthead dateline */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DDD9CE] py-3 text-[11px] uppercase tracking-[0.18em] text-[#77796F]">
+          <span>Municipal Public Ledger &amp; Citizen Dispatch</span>
+          <span>Transparent Ward Accountability</span>
+        </div>
 
-          {/* Left: Text content */}
-          <div className="flex flex-col justify-center py-14 lg:py-20 lg:pr-10">
-            {/* Eyebrow */}
-            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-sm border border-[#E5E8DF] bg-[#F1F3EC] px-3 py-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#788568]"></span>
-              <span className="text-xs font-semibold tracking-wide text-[#536247] uppercase">
-                Civic Participation Platform
-              </span>
-            </div>
-
-            <h1 className="text-[2rem] sm:text-[2.5rem] font-bold leading-[1.15] tracking-tight text-[#30352D]">
-              Better Neighbourhoods<br />
-              <span className="text-[#536247]">Start With Your Voice.</span>
-            </h1>
-
-            <p className="mt-5 text-base text-[#74796F] leading-relaxed max-w-lg">
-              Report civic issues, track their progress and help build cleaner, safer and
-              better-connected communities — directly with your municipal corporation.
+        {/* Two-column editorial composition */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center py-10 sm:py-14 lg:py-16">
+          {/* Left column: Editorial headline & actions */}
+          <div className="lg:col-span-6 space-y-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#718267]">
+              Civic Journal · Public Works &amp; Neighbourhood Care
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <h1 className="font-serif text-[2.25rem] sm:text-[3rem] lg:text-[3.35rem] font-semibold leading-[1.1] tracking-tight text-[#1B3A2E]">
+              Every street deserves a{" "}
+              <span className="italic font-normal text-[#263D30]">
+                documented record
+              </span>{" "}
+              of care.
+            </h1>
+
+            <p className="text-base text-[#77796F] leading-relaxed max-w-lg">
+              CivicTrack connects residents directly with municipal departments.
+              Report neighbourhood defects, follow field progress in real time,
+              and read verified stories of public spaces restored.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <Link
-                href="/register"
-                className="inline-flex items-center gap-2 rounded-md bg-[#788568] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#536247] transition-colors"
+                href="/citizen/report"
+                className="inline-flex items-center gap-2 rounded-sm bg-[#1B3A2E] px-5 py-3 text-sm font-medium text-[#F7F5EE] hover:bg-[#263D30] transition-colors"
               >
-                Report an Issue
+                <span>Report an Issue</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center gap-2 rounded-md border border-[#E5E8DF] bg-white px-5 py-2.5 text-sm font-semibold text-[#30352D] hover:bg-[#F1F3EC] transition-colors"
+              <Link
+                href="/track"
+                className="inline-flex items-center gap-2 rounded-sm border border-[#DDD9CE] bg-[#FAF8F2] px-5 py-3 text-sm font-medium text-[#252820] hover:bg-[#ECE9DF] hover:border-[#718267] transition-colors"
               >
-                How It Works
-                <ChevronDown className="h-4 w-4 text-[#74796F]" />
-              </a>
+                <Search className="h-4 w-4 text-[#718267]" />
+                <span>Track a Report</span>
+              </Link>
             </div>
 
-            {/* Trust signals */}
-            <div className="mt-10 flex flex-wrap items-center gap-4 text-xs text-[#74796F]">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#788568]"></span>
-                Free for residents
+            {/* Editorial footnote strip */}
+            <div className="pt-4 border-t border-[#DDD9CE] grid grid-cols-3 gap-4 max-w-md text-xs text-[#77796F]">
+              <div>
+                <p className="font-semibold text-[#252820]">Direct Routing</p>
+                <p className="mt-0.5 text-[11px]">To ward departments</p>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#788568]"></span>
-                No app download needed
+              <div>
+                <p className="font-semibold text-[#252820]">Audit Trail</p>
+                <p className="mt-0.5 text-[11px]">Timestamped updates</p>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#788568]"></span>
-                Track resolution in real time
+              <div>
+                <p className="font-semibold text-[#252820]">Photo Proof</p>
+                <p className="mt-0.5 text-[11px]">Verified on closure</p>
               </div>
             </div>
           </div>
 
-          {/* Right: Photograph */}
-          <div className="relative hidden lg:flex items-center justify-center py-10">
-            {/* Authentic Indian neighbourhood photo via Unsplash */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800&q=80&auto=format&fit=crop"
-              alt="Indian neighbourhood street with infrastructure"
-              className="h-full w-full max-h-[440px] object-cover rounded-md border border-[#E5E8DF]"
-              loading="eager"
-            />
-            {/* Overlay badge */}
-            <div className="absolute bottom-14 left-4 rounded-md border border-[#E5E8DF] bg-white p-3 shadow-sm max-w-[200px]">
-              <p className="text-[11px] font-semibold text-[#30352D]">Issue Reported & Resolved</p>
-              <p className="text-[10px] text-[#74796F] mt-0.5">Pothole — MG Road, Sector 12</p>
-              <div className="mt-2 inline-flex items-center gap-1 rounded-sm bg-[#E9EDE4] px-1.5 py-0.5 text-[10px] font-semibold text-[#3E4B37]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#536247]"></span>
-                Resolved in 4 days
-              </div>
+          {/* Right column: Supplied Civic Landscape Illustration */}
+          <div className="lg:col-span-6 flex items-center justify-center">
+            <div className="w-full max-w-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/illustrations/civic-hero-landscape.png"
+                alt="Illustrated civic hall, sunlit park pathway, and neighbourhood greenery"
+                className="w-full h-auto max-h-[430px] object-contain mix-blend-multiply select-none"
+                loading="eager"
+              />
             </div>
           </div>
         </div>
       </div>
-
-      {/* Divider */}
-      <div className="border-t border-[#E5E8DF]" />
     </section>
   );
 }

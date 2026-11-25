@@ -1,117 +1,199 @@
 import Link from "next/link";
-import {
-  Construction,
-  Trash2,
-  Droplets,
-  Waves,
-  Lightbulb,
-  Building2,
-  Sparkles,
-  MoreHorizontal,
-} from "lucide-react";
+import { ShieldCheck, ArrowUpRight } from "lucide-react";
 
-const CATEGORIES = [
+const CATEGORIES: Array<{
+  code: string;
+  label: string;
+  description: string;
+  href: string;
+  imageSrc?: string;
+  imageStyle?: "cutout" | "squircle" | "scene";
+}> = [
   {
-    icon: Construction,
+    code: "01",
     label: "Roads & Potholes",
-    description: "Damaged roads, potholes, broken dividers",
-    href: "/register",
+    description:
+      "Damaged carriageways, potholes, sunken manholes, and broken road dividers.",
+    href: "/citizen/report?category=roads_potholes",
+    imageSrc: "/assets/icons/Watercolor Road Repair Crew.png",
+    imageStyle: "cutout",
   },
   {
-    icon: Trash2,
-    label: "Garbage Collection",
-    description: "Uncollected waste, overflowing bins",
-    href: "/register",
+    code: "02",
+    label: "Water Supply",
+    description:
+      "Pipeline leakages, burst mains, contaminated supply, and low ward pressure.",
+    href: "/citizen/report?category=water_leakage",
+    imageSrc: "/assets/icons/Water Tap with Basin and Greenery.png",
+    imageStyle: "squircle",
   },
   {
-    icon: Droplets,
-    label: "Water Leakage",
-    description: "Burst pipes, water seepage, supply issues",
-    href: "/register",
-  },
-  {
-    icon: Waves,
-    label: "Drainage",
-    description: "Blocked drains, waterlogging, flooding",
-    href: "/register",
-  },
-  {
-    icon: Lightbulb,
-    label: "Streetlights",
-    description: "Broken lights, non-functional poles",
-    href: "/register",
-  },
-  {
-    icon: Building2,
-    label: "Public Infrastructure",
-    description: "Damaged footpaths, public property",
-    href: "/register",
-  },
-  {
-    icon: Sparkles,
+    code: "03",
     label: "Sanitation",
-    description: "Public toilet upkeep, open defecation areas",
-    href: "/register",
+    description:
+      "Uncollected household waste, overflowing bins, and public convenience upkeep.",
+    href: "/citizen/report?category=sanitation",
+    imageSrc: "/assets/icons/Watercolor Dual Waste Bins.png",
+    imageStyle: "squircle",
   },
   {
-    icon: MoreHorizontal,
-    label: "Other Issues",
-    description: "Encroachments, noise, misc civic concerns",
-    href: "/register",
+    code: "04",
+    label: "Drainage",
+    description:
+      "Clogged stormwater drains, monsoon waterlogging, and open sewer overflows.",
+    href: "/citizen/report?category=drainage",
+    imageSrc: "/assets/icons/Watercolor Storm Drain with Lush Greenery.png",
+    imageStyle: "cutout",
+  },
+  {
+    code: "05",
+    label: "Streetlights",
+    description:
+      "Dark intersections, flickering lamps, and damaged electrical feeder poles.",
+    href: "/citizen/report?category=streetlights",
+    imageSrc: "/assets/icons/Vintage Streetlamp Among Greenery.png",
+    imageStyle: "squircle",
+  },
+  {
+    code: "06",
+    label: "Public Infrastructure",
+    description:
+      "Cracked footpaths, municipal park benches, bus shelters, and civic buildings.",
+    href: "/citizen/report?category=public_infrastructure",
+    imageSrc: "/assets/images/Civic Cityscape with Domed Landmark.png",
+    imageStyle: "scene",
+  },
+  {
+    code: "07",
+    label: "Public Safety",
+    description:
+      "Exposed wiring, fallen trees, broken railings, and hazardous civic obstructions.",
+    href: "/citizen/report?category=other",
   },
 ];
 
 export function CategoriesSection() {
   return (
-    <section id="categories" className="bg-[#F8F9F5] py-14 px-4 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        {/* Section header */}
-        <div className="mb-10 max-w-xl">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#788568]">
-            Issue Categories
+    <section
+      id="categories"
+      className="relative overflow-hidden bg-[#F7F5EE] py-16 sm:py-20 px-4 sm:px-6 border-b border-[#DDD9CE]"
+    >
+      {/* Subtle botanical tree canopy along upper-right section transition */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/images/Vintage Watercolor Greenery Branch.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none select-none hidden lg:block absolute -top-2 right-0 w-[340px] xl:w-[400px] h-auto object-contain mix-blend-multiply opacity-85"
+      />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        {/* Editorial Section Header */}
+        <div className="mb-12 max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#718267]">
+            Departmental Index · Issue Categories
           </p>
-          <h2 className="text-2xl font-bold tracking-tight text-[#30352D]">
-            What can you report?
+          <h2 className="mt-2 font-serif text-3xl sm:text-4xl font-semibold tracking-tight text-[#1B3A2E]">
+            What neighbourhoods can document
           </h2>
-          <p className="mt-2.5 text-sm text-[#74796F] leading-relaxed">
-            CivicTrack routes your complaint to the right department automatically.
-            Select the category that best describes the problem.
+          <p className="mt-3 text-sm sm:text-base text-[#77796F] leading-relaxed">
+            Each report is classified and routed directly to the responsible
+            municipal engineering, sanitation, or electrical division.
           </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <Link
-                key={cat.label}
-                href={cat.href}
-                className="group flex flex-col gap-3 rounded-md border border-[#E5E8DF] bg-white p-4 hover:border-[#B4BBA5] hover:bg-[#FAFAF8] transition-colors"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#F1F3EC] text-[#536247] group-hover:bg-[#E9EDE4] transition-colors">
-                  <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
+        {/* Editorial ruled grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-[#DDD9CE]">
+          {CATEGORIES.map((cat) => (
+            <Link
+              key={cat.label}
+              href={cat.href}
+              className="group flex flex-col justify-between gap-5 border-r border-b border-[#DDD9CE] bg-[#FAF8F2] p-6 hover:bg-[#ECE9DF]/70 transition-colors"
+            >
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  {cat.imageSrc ? (
+                    cat.imageStyle === "squircle" ? (
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#1B3A2E]/30 bg-[#FAF2DE]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={cat.imageSrc}
+                          alt={cat.label}
+                          className="h-full w-full object-contain scale-[1.12] transition-transform duration-300 group-hover:scale-[1.16]"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : cat.imageStyle === "scene" ? (
+                      <div className="h-14 w-24 shrink-0 overflow-hidden rounded-sm border border-[#DDD9CE] bg-[#F7F5EE] px-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={cat.imageSrc}
+                          alt={cat.label}
+                          className="h-full w-full object-contain mix-blend-multiply"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-14 w-16 shrink-0 flex items-center justify-start">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={cat.imageSrc}
+                          alt={cat.label}
+                          className="h-14 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      </div>
+                    )
+                  ) : (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-sm border border-[#DDD9CE] bg-[#F7F5EE] text-[#1B3A2E] group-hover:bg-[#1B3A2E] group-hover:text-[#F7F5EE] transition-colors">
+                      <ShieldCheck className="h-6 w-6" strokeWidth={1.6} />
+                    </div>
+                  )}
+                  <span className="font-mono text-[11px] text-[#77796F]">
+                    {cat.code}
+                  </span>
                 </div>
+
                 <div>
-                  <p className="text-sm font-semibold text-[#30352D] leading-tight">
+                  <h3 className="font-serif text-lg font-semibold text-[#252820] group-hover:text-[#1B3A2E] transition-colors">
                     {cat.label}
-                  </p>
-                  <p className="mt-1 text-xs text-[#74796F] leading-snug">
+                  </h3>
+                  <p className="mt-1.5 text-xs text-[#77796F] leading-relaxed">
                     {cat.description}
                   </p>
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+              </div>
 
-        <p className="mt-6 text-xs text-[#74796F]">
-          Not sure which category fits?{" "}
-          <Link href="/register" className="font-semibold text-[#536247] hover:underline">
-            Select &quot;Other Issues&quot;
-          </Link>{" "}
-          and our team will route it correctly.
-        </p>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#1B3A2E] pt-1">
+                File in category
+                <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </span>
+            </Link>
+          ))}
+
+          {/* 8th editorial cell: direct filing callout */}
+          <Link
+            href="/citizen/report"
+            className="group flex flex-col justify-between gap-5 border-r border-b border-[#DDD9CE] bg-[#1B3A2E] p-6 text-[#F7F5EE] hover:bg-[#263D30] transition-colors"
+          >
+            <div className="space-y-2">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-[#B8C4AE]">
+                Direct Dispatch
+              </span>
+              <h3 className="font-serif text-xl font-semibold leading-snug">
+                See another municipal concern?
+              </h3>
+              <p className="text-xs text-[#D5DDD0] leading-relaxed">
+                File under general civic matters and municipal triage will assign
+                the appropriate field team.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F7F5EE]">
+              Open Grievance Form
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        </div>
       </div>
     </section>
   );

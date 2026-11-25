@@ -1,22 +1,22 @@
-import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { MapPin, Clock, Tag } from 'lucide-react';
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import { Clock, Tag } from "lucide-react";
 
 interface ComplaintCardProps {
   complaint: any;
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-[#E9EDE4] text-[#30352D]",
-  submitted: "bg-[#E9EDE4] text-[#30352D]",
-  under_review: "bg-amber-50 text-amber-800 border border-amber-200",
-  assigned: "bg-[#B4BBA5] text-[#30352D]",
-  "in-progress": "bg-[#788568] text-white",
-  in_progress: "bg-[#788568] text-white",
-  resolution_submitted: "bg-blue-50 text-blue-800 border border-blue-200",
-  resolved: "bg-[#3E4B37] text-white",
-  closed: "bg-[#30352D] text-white",
-  rejected: "border border-red-200 text-red-700 bg-red-50",
+  pending: "bg-[#ECE9DF] text-[#252820] border-[#DDD9CE]",
+  submitted: "bg-[#ECE9DF] text-[#252820] border-[#DDD9CE]",
+  under_review: "bg-[#F3EEDB] text-[#6E552F] border-[#DDD9CE]",
+  assigned: "bg-[#ECE9DF] text-[#1B3A2E] border-[#DDD9CE]",
+  "in-progress": "bg-[#718267] text-[#F7F5EE] border-transparent",
+  in_progress: "bg-[#718267] text-[#F7F5EE] border-transparent",
+  resolution_submitted: "bg-[#ECE9DF] text-[#1B3A2E] border-[#718267]",
+  resolved: "bg-[#2D5A3F] text-[#F7F5EE] border-transparent",
+  closed: "bg-[#1B3A2E] text-[#F7F5EE] border-transparent",
+  rejected: "border-[#E4C9C6] text-[#8B342E] bg-[#F4E8E7]",
 };
 
 export function ComplaintCard({ complaint }: ComplaintCardProps) {
@@ -27,42 +27,49 @@ export function ComplaintCard({ complaint }: ComplaintCardProps) {
       : complaint.createdAt?.seconds
       ? new Date(complaint.createdAt.seconds * 1000)
       : new Date(complaint.createdAt);
-    timeAgo = formatDistanceToNow(d, { addSuffix: true });
+    if (!Number.isNaN(d.getTime())) {
+      timeAgo = formatDistanceToNow(d, { addSuffix: true });
+    }
   } catch {
     timeAgo = "recently";
   }
 
   const statusKey = complaint.status || "submitted";
-  const statusClass = STATUS_COLORS[statusKey] || "bg-[#E9EDE4] text-[#30352D]";
+  const statusClass =
+    STATUS_COLORS[statusKey] || "bg-[#ECE9DF] text-[#252820] border-[#DDD9CE]";
 
   return (
     <Link href={`/citizen/complaints/${complaint.id}`} className="block group">
-      <div className="bg-white border border-[#E5E8DF] rounded-md p-4 hover:border-[#788568] transition-colors flex flex-col justify-between h-full">
+      <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-4 hover:border-[#718267] transition-colors flex flex-col justify-between h-full">
         <div>
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[11px] font-mono font-medium text-[#74796F]">
+            <span className="text-[11px] font-mono font-medium text-[#77796F]">
               {complaint.ticketNumber || `#${complaint.id.slice(0, 8)}`}
             </span>
-            <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full ${statusClass}`}>
-              {statusKey.replace(/[-_]/g, ' ')}
+            <span
+              className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${statusClass}`}
+            >
+              {statusKey.replace(/[-_]/g, " ")}
             </span>
           </div>
 
-          <h3 className="text-sm font-semibold text-[#30352D] group-hover:text-[#536247] transition-colors line-clamp-1">
+          <h3 className="font-serif text-base font-semibold text-[#252820] group-hover:text-[#1B3A2E] transition-colors line-clamp-1">
             {complaint.title}
           </h3>
 
           {complaint.description && (
-            <p className="text-xs text-[#74796F] line-clamp-2 mt-1 leading-relaxed">
+            <p className="text-xs text-[#77796F] line-clamp-2 mt-1 leading-relaxed">
               {complaint.description}
             </p>
           )}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-[#F1F3EC] flex items-center justify-between text-xs text-[#74796F]">
+        <div className="mt-4 pt-3 border-t border-[#DDD9CE] flex items-center justify-between text-xs text-[#77796F]">
           <span className="flex items-center gap-1 truncate capitalize">
-            <Tag className="h-3 w-3 shrink-0 text-[#788568]" />
-            <span className="truncate">{complaint.category?.replace(/_/g, ' ') || 'Civic Issue'}</span>
+            <Tag className="h-3 w-3 shrink-0 text-[#718267]" />
+            <span className="truncate">
+              {complaint.category?.replace(/_/g, " ") || "Civic Issue"}
+            </span>
           </span>
           <span className="flex items-center gap-1 shrink-0 text-[11px]">
             <Clock className="h-3 w-3" />

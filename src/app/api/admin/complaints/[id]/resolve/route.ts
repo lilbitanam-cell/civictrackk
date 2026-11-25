@@ -28,18 +28,26 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const session = verifySessionToken(token);
+    const session = await verifySessionToken(token);
     if (!session || session.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden: admin only" },
         { status: 403 }
       );
     }
+    if (!session.isActive) {
+      return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+    }
 
-    const { action, reason } = (await request.json()) as {
-      action: "approve" | "reject";
-      reason?: string;
-    };
+    let body: { action?: unknown; reason?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    const action = body.action;
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
 
     if (action !== "approve" && action !== "reject") {
       return NextResponse.json(

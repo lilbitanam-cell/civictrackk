@@ -1,138 +1,220 @@
-import { FilePlus, ClipboardCheck, Wrench } from "lucide-react";
+import Link from "next/link";
+import {
+  FilePlus,
+  ClipboardCheck,
+  Wrench,
+  ArrowRight,
+  CheckCircle2,
+  Search,
+} from "lucide-react";
 
 const STEPS = [
   {
     number: "01",
+    actor: "By Resident",
     icon: FilePlus,
-    title: "Report an Issue",
-    body: "Register as a citizen and submit your complaint with a description, photograph, and location. Takes less than two minutes.",
+    title: "Document & File",
+    body: "Capture a concise report with on-site photographs, ward location, and map pin. A permanent reference ticket is issued immediately.",
   },
   {
     number: "02",
+    actor: "Municipal Desk",
     icon: ClipboardCheck,
-    title: "Review & Assignment",
-    body: "Municipal administrators receive, review and triage the complaint. The issue is assigned to the relevant department and field team.",
+    title: "Triage & Dispatch",
+    body: "Supervisors verify location particulars, calibrate urgency, and route the work order directly to the responsible municipal crew.",
   },
   {
     number: "03",
+    actor: "Field & Audit",
     icon: Wrench,
-    title: "Resolution & Tracking",
-    body: "Field workers resolve the issue on-site and update the status. You receive verified updates at every stage until closure.",
+    title: "Verify & Archive",
+    body: "Field teams upload completion photographs from the site. Tickets close only after administrative inspection, preserving a lasting record.",
+  },
+];
+
+const PIPELINE_STAGES = [
+  {
+    code: "01",
+    label: "Submitted",
+    detail: "Ticket issued & desk alerted",
+  },
+  {
+    code: "02",
+    label: "Under Review",
+    detail: "Scope & ward confirmed",
+  },
+  {
+    code: "03",
+    label: "Assigned",
+    detail: "Crew & division dispatched",
+  },
+  {
+    code: "04",
+    label: "In Progress",
+    detail: "On-site repair underway",
+  },
+  {
+    code: "05",
+    label: "Resolved",
+    detail: "Proof audited & archived",
   },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="border-t border-[#E5E8DF] bg-white py-14 px-4 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <section
+      id="how-it-works"
+      className="bg-[#F7F5EE] py-16 sm:py-20 px-4 sm:px-6 border-b border-[#DDD9CE]"
+    >
+      <div className="mx-auto max-w-6xl space-y-12">
+        {/* Editorial Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#DDD9CE]">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#718267]">
+              Process &amp; Accountability
+            </p>
+            <h2 className="mt-2 font-serif text-3xl sm:text-4xl font-semibold tracking-tight text-[#1B3A2E]">
+              How CivicTrack works
+            </h2>
+            <p className="mt-3 text-sm sm:text-base text-[#77796F] leading-relaxed">
+              A three-stage civic ledger connecting neighbourhood observations to
+              verified municipal repairs — with every handoff timestamped.
+            </p>
+          </div>
 
-        {/* Header */}
-        <div className="mb-10 max-w-xl">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#788568]">
-            Process Overview
-          </p>
-          <h2 className="text-2xl font-bold tracking-tight text-[#30352D]">
-            How CivicTrack works
-          </h2>
-          <p className="mt-2.5 text-sm text-[#74796F] leading-relaxed">
-            A simple three-step process connects your complaint to the right department and keeps you informed until it is resolved.
-          </p>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link
+              href="/citizen/report"
+              className="inline-flex items-center gap-2 rounded-sm bg-[#1B3A2E] px-4 py-2 text-xs font-medium text-[#F7F5EE] hover:bg-[#263D30] transition-colors"
+            >
+              <span>File a Report</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href="/track"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-[#DDD9CE] bg-[#FAF8F2] px-4 py-2 text-xs font-medium text-[#252820] hover:bg-[#ECE9DF] transition-colors"
+            >
+              <Search className="h-3.5 w-3.5 text-[#718267]" />
+              <span>Track Ticket</span>
+            </Link>
+          </div>
         </div>
 
-        {/* Steps grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          {/* Connector line (desktop only) */}
-          <div className="hidden md:block absolute top-[2.1rem] left-[calc(16.66%+1.5rem)] right-[calc(16.66%+1.5rem)] h-px bg-[#E5E8DF] z-0" />
-
+        {/* Three Editorial Stage Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 border-t border-l border-[#DDD9CE]">
           {STEPS.map((step) => {
             const Icon = step.icon;
             return (
-              <div key={step.number} className="relative z-10 flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  {/* Step icon */}
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md border border-[#E5E8DF] bg-white shadow-none">
-                    <Icon className="h-5 w-5 text-[#788568]" strokeWidth={1.75} />
+              <div
+                key={step.number}
+                className="flex flex-col justify-between gap-6 border-r border-b border-[#DDD9CE] bg-[#FAF8F2] p-6 sm:p-8"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-serif text-3xl font-semibold text-[#1B3A2E]/85">
+                      {step.number}
+                    </span>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[#DDD9CE] bg-[#F7F5EE] text-[#1B3A2E]">
+                      <Icon className="h-4 w-4" strokeWidth={1.75} />
+                    </div>
                   </div>
-                  <span className="text-xs font-bold tracking-widest text-[#B4BBA5]">
-                    STEP {step.number}
-                  </span>
+
+                  <div>
+                    <h3 className="font-serif text-xl font-semibold text-[#252820]">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-[#77796F] leading-relaxed">
+                      {step.body}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-[#30352D]">{step.title}</h3>
-                  <p className="mt-1.5 text-sm text-[#74796F] leading-relaxed">{step.body}</p>
+
+                <div className="pt-3 border-t border-[#DDD9CE] flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-[#718267] font-medium">
+                  <span>Stage {step.number}</span>
+                  <span>{step.actor}</span>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Thin rule */}
-        <div className="mt-12 border-t border-[#E5E8DF]" />
-
-        {/* Process detail band */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          {/* Realistic ticket mockup — static visual, no fake data */}
-          <div className="rounded-md border border-[#E5E8DF] bg-[#F8F9F5] p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#30352D]">Issue Ticket</span>
-              <span className="rounded-sm border border-[#E5E8DF] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#536247]">
-                IN PROGRESS
+        {/* Public Verification & Horizontal 5-Stage Ledger */}
+        <div className="border border-[#DDD9CE] bg-[#FAF8F2]">
+          {/* Top bar: 5 connected milestones */}
+          <div className="border-b border-[#DDD9CE] bg-[#ECE9DF]/45 p-6 sm:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1B3A2E]">
+                Audited Workflow Pipeline
+              </p>
+              <span className="font-mono text-[11px] text-[#77796F]">
+                5 Verified Checkpoints
               </span>
             </div>
-            <div className="border-t border-[#E5E8DF] pt-3 space-y-2">
-              <div>
-                <p className="text-[10px] text-[#74796F] uppercase tracking-wider">Category</p>
-                <p className="text-xs font-medium text-[#30352D] mt-0.5">Roads & Potholes</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-[#74796F] uppercase tracking-wider">Location</p>
-                <p className="text-xs font-medium text-[#30352D] mt-0.5">Near Bus Stop, Nehru Market Road</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-[#74796F] uppercase tracking-wider">Assigned Department</p>
-                <p className="text-xs font-medium text-[#30352D] mt-0.5">PWD — Roads Division</p>
-              </div>
-            </div>
-            <div className="border-t border-[#E5E8DF] pt-3">
-              <p className="text-[10px] text-[#74796F] uppercase tracking-wider mb-2">Progress</p>
-              <div className="flex gap-2 items-center">
-                {["Submitted", "Reviewed", "Assigned", "In Progress", "Resolved"].map((s, i) => (
-                  <div key={s} className="flex flex-col items-center gap-1">
-                    <div className={`h-2 w-2 rounded-full ${i <= 3 ? "bg-[#788568]" : "bg-[#E5E8DF]"}`} />
-                    {i < 4 && <div className={`hidden sm:block h-px w-6 ${i < 3 ? "bg-[#788568]" : "bg-[#E5E8DF]"}`} style={{ position: "relative", top: "-0.6rem", marginLeft: "0.5rem" }} />}
+
+            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {PIPELINE_STAGES.map((stage, idx) => {
+                const isFinal = idx === PIPELINE_STAGES.length - 1;
+                return (
+                  <div
+                    key={stage.code}
+                    className="relative border border-[#DDD9CE] bg-[#F7F5EE] p-4 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] font-semibold text-[#718267]">
+                        {stage.code}
+                      </span>
+                      {isFinal ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#2D5A3F]" />
+                      ) : (
+                        <span className="h-2 w-2 rounded-full bg-[#1B3A2E]/70" />
+                      )}
+                    </div>
+                    <p className="font-serif text-base font-semibold text-[#252820]">
+                      {stage.label}
+                    </p>
+                    <p className="text-xs text-[#77796F] leading-snug">
+                      {stage.detail}
+                    </p>
                   </div>
-                ))}
-              </div>
-              <div className="flex gap-1.5 flex-wrap mt-2">
-                {["Submitted", "Reviewed", "Assigned", "In Progress", "Resolved"].map((s, i) => (
-                  <span key={s} className={`text-[10px] ${i <= 3 ? "text-[#536247] font-semibold" : "text-[#B4BBA5]"}`}>{s}</span>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Text */}
-          <div className="space-y-5">
-            <h3 className="text-lg font-semibold text-[#30352D]">
-              Every ticket is traceable from submission to closure
-            </h3>
-            <p className="text-sm text-[#74796F] leading-relaxed">
-              Once you submit an issue, it enters a transparent workflow. Municipal staff triage and assign it.
-              Field workers update status on-site. You can view the current state at any time — no need to call anyone.
-            </p>
-            <ul className="space-y-2.5">
-              {[
-                "No follow-up phone calls required",
-                "Automatic routing to the right department",
-                "Live status visible to the citizen at all times",
-                "Closed only after verified on-site resolution",
-              ].map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-[#30352D]">
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#788568]" />
-                  {point}
-                </li>
-              ))}
-            </ul>
+          {/* Bottom split: Verification Callout + Cityscape Parchment Banner */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 sm:p-8">
+            <div className="lg:col-span-7 space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#718267]">
+                Public Verification
+              </p>
+              <h3 className="font-serif text-2xl font-semibold text-[#1B3A2E] leading-snug">
+                Every filing carries a permanent, timestamped audit trail
+              </h3>
+              <p className="text-sm text-[#77796F] leading-relaxed max-w-xl">
+                Residents and municipal supervisors read from the exact same
+                operational record — from initial photographs through field
+                verification — using the ticket reference number.
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/track"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1B3A2E] hover:underline"
+                >
+                  <span>Look up a ticket reference</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/images/Watercolor Cityscape Banner.png"
+                alt="Illustrated civic ledger scroll with domed municipal landmark and foliage"
+                className="w-full max-w-sm h-auto object-contain mix-blend-multiply select-none"
+                loading="lazy"
+              />
+            </div>
           </div>
         </div>
       </div>

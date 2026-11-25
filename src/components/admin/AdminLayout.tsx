@@ -26,10 +26,10 @@ function AdminNavLinks() {
         <Link
           key={href}
           href={href}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+          className={`flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-colors ${
             pathname === href
-              ? "bg-[#E9EDE4] text-[#30352D] font-medium"
-              : "text-[#74796F] hover:bg-[#F1F3EC] hover:text-[#30352D]"
+              ? "bg-[#ECE9DF] text-[#1B3A2E] font-medium border-l-2 border-[#1B3A2E]"
+              : "text-[#77796F] hover:bg-[#ECE9DF]/60 hover:text-[#252820]"
           }`}
         >
           <Icon className="h-4 w-4 shrink-0" />
@@ -43,17 +43,17 @@ function AdminNavLinks() {
 function AdminNavMobile() {
   const pathname = usePathname();
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E8DF] flex overflow-x-auto py-2 px-1 z-50 shadow-md justify-between">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#FAF8F2] border-t border-[#DDD9CE] flex overflow-x-auto py-2 px-1 z-50 justify-between">
       {navItems.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href;
         return (
           <Link
             key={href}
             href={href}
-            className={`flex flex-col items-center py-1 px-2.5 rounded-lg text-[11px] font-medium transition-colors shrink-0 ${
+            className={`flex flex-col items-center py-1 px-2.5 rounded-sm text-[11px] font-medium transition-colors shrink-0 ${
               isActive
-                ? "text-[#3E4B37] bg-[#E9EDE4] font-semibold"
-                : "text-[#74796F] hover:text-[#30352D]"
+                ? "text-[#1B3A2E] bg-[#ECE9DF] font-semibold"
+                : "text-[#77796F] hover:text-[#252820]"
             }`}
           >
             <Icon className="h-4 w-4 mb-0.5" />
@@ -77,16 +77,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#F8F9F5]">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#F7F5EE]">
       {/* Mobile top bar */}
-      <header className="md:hidden flex items-center justify-between bg-white border-b border-[#E5E8DF] px-4 py-3 sticky top-0 z-40">
-        <div>
-          <span className="font-semibold text-base text-[#30352D]">CivicTrack</span>
-          <span className="text-xs text-[#536247] ml-2 font-medium bg-[#E9EDE4] px-2 py-0.5 rounded">Admin</span>
+      <header className="md:hidden flex items-center justify-between bg-[#FAF8F2] border-b border-[#DDD9CE] px-4 py-2.5 sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/logos/CivicTrack Watercolor Civic Emblem.png"
+            alt="CivicTrack"
+            className="h-9 w-auto object-contain mix-blend-multiply"
+          />
+          <span className="text-[10px] text-[#263D30] font-medium bg-[#ECE9DF] border border-[#DDD9CE] px-2 py-0.5 rounded-sm uppercase tracking-wider">Admin</span>
         </div>
         <button
           onClick={handleSignOut}
-          className="text-xs text-[#74796F] hover:text-[#30352D] flex items-center gap-1 border border-[#E5E8DF] px-2.5 py-1.5 rounded-md hover:bg-[#F1F3EC]"
+          className="text-xs text-[#77796F] hover:text-[#252820] flex items-center gap-1 border border-[#DDD9CE] px-2.5 py-1.5 rounded-sm hover:bg-[#ECE9DF]"
         >
           <LogOut className="h-3.5 w-3.5" />
           <span>Sign Out</span>
@@ -94,15 +99,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="w-60 bg-white border-r border-[#E5E8DF] flex-col py-6 px-4 hidden md:flex shrink-0">
-        <div className="mb-8">
-          <span className="text-lg font-semibold text-[#30352D]">CivicTrack</span>
-          <p className="text-xs text-[#74796F] mt-0.5">Admin Console</p>
+      <aside className="w-60 bg-[#FAF8F2] border-r border-[#DDD9CE] flex-col py-6 px-4 hidden md:flex shrink-0">
+        <div className="mb-8 space-y-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/logos/CivicTrack Watercolor Civic Emblem.png"
+            alt="CivicTrack"
+            className="h-11 w-auto object-contain mix-blend-multiply"
+          />
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#77796F] pl-0.5">Admin Console</p>
         </div>
         <AdminNavLinks />
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2 text-sm text-[#74796F] hover:text-[#30352D] hover:bg-[#F1F3EC] rounded-md transition-colors mt-4"
+          className="flex items-center gap-3 px-3 py-2 text-sm text-[#77796F] hover:text-[#252820] hover:bg-[#ECE9DF] rounded-sm transition-colors mt-4"
         >
           <LogOut className="h-4 w-4" />
           Sign Out

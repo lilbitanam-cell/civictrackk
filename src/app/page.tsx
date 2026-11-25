@@ -1,27 +1,35 @@
+export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { LandingNavbar } from "@/components/landing/navbar";
 import { HeroSection } from "@/components/landing/hero-section";
+import { StatsBand } from "@/components/landing/stats-band";
 import { CategoriesSection } from "@/components/landing/categories-section";
+import { CivicStoriesSection } from "@/components/landing/civic-stories-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { WhyCivicTrackSection } from "@/components/landing/why-civictrack-section";
 import { CitizenParticipationSection } from "@/components/landing/participation-section";
 import { FaqSection } from "@/components/landing/faq-section";
 import { CtaSection } from "@/components/landing/cta-section";
 import { LandingFooter } from "@/components/landing/footer";
+import { getPublicCivicJournalDataServer } from "@/services/server/complaints.server";
 
 export const metadata: Metadata = {
-  title: "CivicTrack — Report & Resolve Civic Issues in Your Neighbourhood",
+  title: "CivicTrack — The Civic Journal & Neighbourhood Issue Ledger",
   description:
-    "Report potholes, water leakages, streetlight outages and more. CivicTrack connects Indian residents with municipal departments for transparent, trackable issue resolution.",
+    "Report potholes, water leakages, streetlight outages, and sanitation issues. Follow verified municipal progress and documented Civic Stories.",
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const journalData = await getPublicCivicJournalDataServer();
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9F5] text-[#30352D]">
+    <div className="min-h-screen flex flex-col bg-[#F7F5EE] text-[#252820]">
       <LandingNavbar />
       <main className="flex-1">
         <HeroSection />
+        <StatsBand stats={journalData.stats} />
         <CategoriesSection />
+        <CivicStoriesSection />
         <HowItWorksSection />
         <WhyCivicTrackSection />
         <CitizenParticipationSection />

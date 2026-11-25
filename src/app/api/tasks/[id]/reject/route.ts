@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const session = verifySessionToken(token);
+    const session = await verifySessionToken(token);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -29,9 +29,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (session.role !== "admin") {
       return NextResponse.json({ error: "Forbidden: admin only" }, { status: 403 });
     }
+    if (!session.isActive) {
+      return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+    }
 
-    const body = await request.json();
-    const { reason } = body as { reason: string };
+    let body: { reason?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
 
     if (!reason) {
       return NextResponse.json({ error: "Rejection reason is required" }, { status: 400 });
@@ -65,7 +74,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       actorName: session.displayName || "Admin",
       actorRole: "admin",
       action: "reopened",
-      previousStatus: "resolved",
+      previousStatus: "resolution_submitted",
       newStatus: "in_progress",
       notes: `Admin rejected resolution. Reason: ${reason}`,
     });

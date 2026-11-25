@@ -47,9 +47,27 @@ export default function AdminComplaintActions({ complaint, departments, session 
 
   useEffect(() => {
     if (deptId) {
-      getWorkersByDepartment(deptId).then(setWorkers).catch(() => setWorkers([]));
+      getWorkersByDepartment(deptId)
+        .then(setWorkers)
+        .catch((err) => {
+          console.error("Failed to fetch workers for department:", err);
+          setWorkers([]);
+        });
+    } else {
+      setWorkers([]);
     }
   }, [deptId]);
+
+  const parseErrorResponse = async (res: Response, fallback: string) => {
+    try {
+      const text = await res.text();
+      if (!text) return fallback;
+      const parsed = JSON.parse(text);
+      return parsed?.error || fallback;
+    } catch {
+      return `${fallback} (HTTP ${res.status})`;
+    }
+  };
 
   const patch = async (body: Record<string, unknown>) => {
     const res = await fetch(`/api/complaints/${complaint.id}`, {
@@ -57,7 +75,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error((await res.json()).error || "Request failed");
+    if (!res.ok) throw new Error(await parseErrorResponse(res, "Request failed"));
   };
 
   const act = async (fn: () => Promise<void>, successMsg: string) => {
@@ -67,30 +85,33 @@ export default function AdminComplaintActions({ complaint, departments, session 
       await fn();
       setMsg({ type: "success", text: successMsg });
       router.refresh();
-    } catch (e: any) {
-      setMsg({ type: "error", text: e.message });
+    } catch (e: unknown) {
+      setMsg({
+        type: "error",
+        text: e instanceof Error ? e.message : "Action failed.",
+      });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="bg-white border border-[#E5E8DF] rounded-lg p-5 sm:p-6 space-y-6 shadow-xs">
-      <div className="border-b border-[#F1F3EC] pb-3 flex items-center justify-between">
-        <h2 className="text-sm font-bold text-[#30352D] uppercase tracking-wider">
+    <div className="bg-[#FAF8F2] border border-[#DDD9CE] rounded-sm p-5 sm:p-6 space-y-6">
+      <div className="border-b border-[#DDD9CE] pb-3 flex items-center justify-between">
+        <h2 className="font-serif text-base font-medium text-[#1B3A2E]">
           Municipal Operations & Workflow Actions
         </h2>
-        <span className="text-[11px] text-[#74796F] font-mono">
+        <span className="text-[11px] text-[#77796F] font-mono">
           Stage: {complaint.status}
         </span>
       </div>
 
       {msg && (
         <div
-          className={`text-xs sm:text-sm px-4 py-3 rounded-md ${
+          className={`text-xs sm:text-sm px-4 py-3 rounded-sm ${
             msg.type === "success"
-              ? "bg-[#E9EDE4] text-[#3E4B37] border border-[#B4BBA5]"
-              : "bg-red-50 text-red-700 border border-red-300"
+              ? "bg-[#ECE9DF] text-[#1B3A2E] border border-[#718267]"
+              : "bg-[#FAF0EE] text-[#8B342E] border border-[#E5C9C6]"
           }`}
         >
           {msg.text}
@@ -99,16 +120,16 @@ export default function AdminComplaintActions({ complaint, departments, session 
 
       {/* Verify / Reject complaint */}
       {["submitted", "under_review"].includes(complaint.status) && (
-        <div className="space-y-3 border-b border-[#E5E8DF] pb-5">
-          <p className="text-xs font-semibold text-[#536247] uppercase tracking-wider">
+        <div className="space-y-3 border-b border-[#DDD9CE] pb-5">
+          <p className="text-xs font-semibold text-[#1B3A2E] uppercase tracking-wider">
             1. Triage & Intake Verification
           </p>
-          <p className="text-xs text-[#74796F]">
+          <p className="text-xs text-[#77796F]">
             Verify this complaint before routing to a municipal department, or reject if invalid.
           </p>
           <div className="flex gap-2.5 flex-wrap">
             <Button
-              className="bg-[#788568] hover:bg-[#536247] text-white text-xs font-semibold"
+              className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-xs font-medium"
               disabled={busy}
               onClick={() =>
                 act(
@@ -121,27 +142,27 @@ export default function AdminComplaintActions({ complaint, departments, session 
             </Button>
             <Button
               variant="outline"
-              className="border-red-200 text-red-700 hover:bg-red-50 text-xs"
+              className="border-[#E5C9C6] text-[#8B342E] hover:bg-[#FAF0EE] text-xs"
               onClick={() => setShowRejectBox(!showRejectBox)}
             >
               Reject Grievance
             </Button>
           </div>
           {showRejectBox && (
-            <div className="space-y-2 pt-2 p-3 bg-red-50/50 rounded-md border border-red-200">
-              <Label className="text-xs font-medium text-red-800">
+            <div className="space-y-2 pt-2 p-3 bg-[#FAF0EE] rounded-sm border border-[#E5C9C6]">
+              <Label className="text-xs font-medium text-[#8B342E]">
                 Official Rejection Reason (Required)
               </Label>
               <Textarea
                 placeholder="State why this grievance cannot be accepted..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                className="border-red-200 text-xs bg-white resize-none"
+                className="border-[#E5C9C6] text-xs bg-[#FAF8F2] resize-none"
                 rows={2}
               />
               <Button
                 variant="outline"
-                className="border-red-300 bg-red-600 text-white hover:bg-red-700 text-xs"
+                className="border-[#8B342E] bg-[#8B342E] text-white hover:bg-[#722A25] text-xs"
                 disabled={busy || !rejectReason.trim()}
                 onClick={() =>
                   act(
@@ -162,15 +183,15 @@ export default function AdminComplaintActions({ complaint, departments, session 
       )}
 
       {/* Priority + Remarks */}
-      <div className="space-y-3 border-b border-[#E5E8DF] pb-5">
-        <p className="text-xs font-semibold text-[#536247] uppercase tracking-wider">
+      <div className="space-y-3 border-b border-[#DDD9CE] pb-5">
+        <p className="text-xs font-semibold text-[#1B3A2E] uppercase tracking-wider">
           2. Priority Calibration & Administrative Remarks
         </p>
         <div className="flex gap-3 flex-wrap items-end">
           <div className="space-y-1">
-            <Label className="text-xs font-medium text-[#74796F]">Priority Level</Label>
+            <Label className="text-xs font-medium text-[#77796F]">Priority Level</Label>
             <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
-              <SelectTrigger className="w-40 border-[#E5E8DF] text-xs">
+              <SelectTrigger className="w-40 border-[#DDD9CE] bg-[#F7F5EE] text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -184,7 +205,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
           </div>
           <Button
             variant="outline"
-            className="text-xs border-[#E5E8DF] text-[#30352D] hover:bg-[#F1F3EC]"
+            className="text-xs border-[#DDD9CE] text-[#252820] hover:bg-[#ECE9DF]"
             disabled={busy}
             onClick={() => act(() => patch({ priority }), "Priority updated.")}
           >
@@ -193,18 +214,18 @@ export default function AdminComplaintActions({ complaint, departments, session 
         </div>
 
         <div className="space-y-1.5 pt-1">
-          <Label className="text-xs font-medium text-[#74796F]">Internal Municipal Remarks</Label>
+          <Label className="text-xs font-medium text-[#77796F]">Internal Municipal Remarks</Label>
           <Textarea
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            className="border-[#E5E8DF] text-xs resize-none"
+            className="border-[#DDD9CE] bg-[#F7F5EE] text-xs resize-none"
             rows={2}
             placeholder="Add internal notes for departmental coordination..."
           />
           <div className="flex justify-end">
             <Button
               variant="outline"
-              className="text-xs border-[#E5E8DF] text-[#30352D] hover:bg-[#F1F3EC]"
+              className="text-xs border-[#DDD9CE] text-[#252820] hover:bg-[#ECE9DF]"
               disabled={busy || !remarks.trim()}
               onClick={() =>
                 act(() => patch({ adminRemarks: remarks.trim() }), "Remarks saved.")
@@ -218,13 +239,13 @@ export default function AdminComplaintActions({ complaint, departments, session 
 
       {/* Assign Worker */}
       {!["rejected", "closed"].includes(complaint.status) && (
-        <div className="space-y-3 border-b border-[#E5E8DF] pb-5">
-          <p className="text-xs font-semibold text-[#536247] uppercase tracking-wider">
+        <div className="space-y-3 border-b border-[#DDD9CE] pb-5">
+          <p className="text-xs font-semibold text-[#1B3A2E] uppercase tracking-wider">
             3. Department & Field Worker Dispatch
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-[#74796F]">Department</Label>
+              <Label className="text-xs font-medium text-[#77796F]">Department</Label>
               <Select
                 value={deptId}
                 onValueChange={(v) => {
@@ -235,7 +256,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
                   setWorkerName("");
                 }}
               >
-                <SelectTrigger className="border-[#E5E8DF] text-xs">
+                <SelectTrigger className="border-[#DDD9CE] bg-[#F7F5EE] text-xs">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,7 +269,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-[#74796F]">Field Worker</Label>
+              <Label className="text-xs font-medium text-[#77796F]">Field Worker</Label>
               <Select
                 value={workerId}
                 onValueChange={(v) => {
@@ -258,7 +279,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
                 }}
                 disabled={!deptId || workers.length === 0}
               >
-                <SelectTrigger className="border-[#E5E8DF] text-xs">
+                <SelectTrigger className="border-[#DDD9CE] bg-[#F7F5EE] text-xs">
                   <SelectValue
                     placeholder={
                       !deptId
@@ -281,20 +302,20 @@ export default function AdminComplaintActions({ complaint, departments, session 
           </div>
 
           <div className="space-y-1 pt-1">
-            <Label className="text-xs font-medium text-[#74796F]">
+            <Label className="text-xs font-medium text-[#77796F]">
               Field Instructions (Optional)
             </Label>
             <Textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              className="border-[#E5E8DF] text-xs resize-none"
+              className="border-[#DDD9CE] bg-[#F7F5EE] text-xs resize-none"
               rows={2}
               placeholder="Instructions regarding required equipment, safety, or access constraints..."
             />
           </div>
 
           <Button
-            className="bg-[#788568] hover:bg-[#536247] text-white text-xs font-semibold"
+            className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-xs font-medium"
             disabled={busy || !deptId || !workerId}
             onClick={() =>
               act(async () => {
@@ -311,7 +332,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
                   }),
                 });
                 if (!res.ok)
-                  throw new Error((await res.json()).error || "Assignment failed");
+                  throw new Error(await parseErrorResponse(res, "Assignment failed"));
               }, "Field worker dispatched and complaint marked Assigned.")
             }
           >
@@ -322,24 +343,24 @@ export default function AdminComplaintActions({ complaint, departments, session 
 
       {/* Resolution verification */}
       {complaint.status === "resolution_submitted" && (
-        <div className="space-y-3 bg-[#F1F3EC] p-4 rounded-md border border-[#D8DDD1]">
-          <p className="text-xs font-semibold text-[#536247] uppercase tracking-wider">
+        <div className="space-y-3 bg-[#ECE9DF] p-4 rounded-sm border border-[#DDD9CE]">
+          <p className="text-xs font-semibold text-[#1B3A2E] uppercase tracking-wider">
             4. Resolution Audit & Final Verification
           </p>
-          <p className="text-xs text-[#30352D] leading-relaxed">
+          <p className="text-xs text-[#252820] leading-relaxed">
             A field worker has completed the on-site resolution and submitted photographic proof. Review the evidence carefully before approving or returning the task.
           </p>
 
           {complaint.resolutionNotes && (
-            <div className="bg-white p-3 rounded border border-[#E5E8DF] text-xs text-[#30352D]">
-              <span className="font-semibold text-[#536247]">Worker Notes:</span>{" "}
+            <div className="bg-[#FAF8F2] p-3 rounded-sm border border-[#DDD9CE] text-xs text-[#252820]">
+              <span className="font-semibold text-[#1B3A2E]">Worker Notes:</span>{" "}
               {complaint.resolutionNotes}
             </div>
           )}
 
           {complaint.resolutionImages && complaint.resolutionImages.length > 0 && (
             <div className="space-y-1.5 pt-1">
-              <span className="text-xs text-[#74796F] font-semibold">
+              <span className="text-xs text-[#77796F] font-semibold">
                 Uploaded Evidence ({complaint.resolutionImages.length}):
               </span>
               <div className="flex gap-2 flex-wrap">
@@ -349,7 +370,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
                     <img
                       src={url}
                       alt={`Evidence ${i + 1}`}
-                      className="w-24 h-24 object-cover rounded-md border border-[#E5E8DF] hover:opacity-90"
+                      className="w-24 h-24 object-cover rounded-sm border border-[#DDD9CE] hover:opacity-90"
                     />
                   </a>
                 ))}
@@ -359,7 +380,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
 
           <div className="flex gap-2.5 flex-wrap pt-2">
             <Button
-              className="bg-[#3E4B37] hover:bg-[#30352D] text-white text-xs font-semibold"
+              className="bg-[#1B3A2E] hover:bg-[#263D30] text-[#F7F5EE] text-xs font-medium"
               disabled={busy}
               onClick={() =>
                 act(async () => {
@@ -372,7 +393,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
                     }
                   );
                   if (!res.ok)
-                    throw new Error((await res.json()).error || "Approval failed");
+                    throw new Error(await parseErrorResponse(res, "Approval failed"));
                 }, "Resolution verified & approved. Complaint marked Resolved.")
               }
             >
@@ -380,7 +401,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
             </Button>
             <Button
               variant="outline"
-              className="border-red-300 text-red-600 hover:bg-red-50 text-xs"
+              className="border-[#E5C9C6] text-[#8B342E] hover:bg-[#FAF0EE] text-xs"
               onClick={() => setShowResolveReject(!showResolveReject)}
             >
               Reject Resolution
@@ -388,20 +409,20 @@ export default function AdminComplaintActions({ complaint, departments, session 
           </div>
 
           {showResolveReject && (
-            <div className="space-y-2 pt-2 p-3 bg-red-50/50 rounded-md border border-red-200">
-              <Label className="text-xs font-medium text-red-800">
+            <div className="space-y-2 pt-2 p-3 bg-[#FAF0EE] rounded-sm border border-[#E5C9C6]">
+              <Label className="text-xs font-medium text-[#8B342E]">
                 Reason for Rejecting Resolution (Worker will be notified to re-perform work)
               </Label>
               <Textarea
                 placeholder="Explain what work remains incomplete or deficient..."
                 value={resolveRejectReason}
                 onChange={(e) => setResolveRejectReason(e.target.value)}
-                className="border-red-200 text-xs bg-white resize-none"
+                className="border-[#E5C9C6] text-xs bg-[#FAF8F2] resize-none"
                 rows={2}
               />
               <Button
                 variant="outline"
-                className="border-red-300 bg-red-600 text-white hover:bg-red-700 text-xs"
+                className="border-[#8B342E] bg-[#8B342E] text-white hover:bg-[#722A25] text-xs"
                 disabled={busy || !resolveRejectReason.trim()}
                 onClick={() =>
                   act(async () => {
@@ -418,7 +439,7 @@ export default function AdminComplaintActions({ complaint, departments, session 
                     );
                     if (!res.ok)
                       throw new Error(
-                        (await res.json()).error || "Rejection failed"
+                        await parseErrorResponse(res, "Rejection failed")
                       );
                   }, "Resolution rejected. Complaint reverted to In Progress.")
                 }

@@ -24,12 +24,15 @@ let auth: Auth | undefined;
 let db: Firestore | undefined;
 let storage: FirebaseStorage | undefined;
 
-if (typeof window !== "undefined" || isClientFirebaseConfigured) {
+if (typeof window !== "undefined" && isClientFirebaseConfigured) {
   if (isClientFirebaseConfigured) {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+    // Avoid 10-minute SDK retry hangs if Storage bucket is not provisioned or CORS blocks
+    storage.maxUploadRetryTime = 4000;
+    storage.maxOperationRetryTime = 4000;
   }
 }
 
@@ -65,6 +68,8 @@ export function getClientStorage(): FirebaseStorage {
   if (!storage) {
     const initializedApp = getClientFirebaseApp();
     storage = getStorage(initializedApp);
+    storage.maxUploadRetryTime = 4000;
+    storage.maxOperationRetryTime = 4000;
   }
   return storage;
 }

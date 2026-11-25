@@ -73,6 +73,14 @@ export default function RegisterPage() {
       throw new Error(data.error || `Failed to establish server session (HTTP ${res.status}).`);
     }
 
+    // Force-refresh token so newly-synced custom claims (role=citizen) are live BEFORE navigation
+    try {
+      const currentUser = getClientAuth().currentUser;
+      if (currentUser) await currentUser.getIdToken(true);
+    } catch {
+      // Non-critical — dashboard still renders via server session cookie
+    }
+
     router.push(data.redirectTo || "/citizen/dashboard");
     router.refresh();
   };
@@ -158,9 +166,6 @@ export default function RegisterPage() {
       // 3. Establish server session via Admin SDK & set citizen claims
       const idToken = await user.getIdToken();
       await completeSessionAndRedirect(idToken);
-
-      // Force token refresh so custom claims (role=citizen) are live on client
-      await user.getIdToken(true);
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code || "";
       const message = (err as { message?: string })?.message;
@@ -188,8 +193,6 @@ export default function RegisterPage() {
       const userCredential = await signInWithPopup(auth, provider);
       const idToken = await userCredential.user.getIdToken();
       await completeSessionAndRedirect(idToken);
-      // Force token refresh so custom claims (role) are live on client
-      await userCredential.user.getIdToken(true);
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code || "";
       const message = (err as { message?: string })?.message;
@@ -199,24 +202,27 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9F5]">
+    <div className="min-h-screen flex flex-col bg-[#F7F5EE]">
       <TopNav showAuthLinks={false} />
 
-      <main className="flex-1 flex items-center justify-center p-4 py-8">
-        <div className="w-full max-w-sm space-y-4">
-          <div className="text-center space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-[#30352D]">
+      <main className="flex-1 flex items-center justify-center p-4 py-10">
+        <div className="w-full max-w-sm space-y-5">
+          <div className="text-center space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#718267]">
+              CivicTrack · Resident Registration
+            </p>
+            <h1 className="font-serif text-2xl font-semibold tracking-tight text-[#1B3A2E]">
               Citizen Account Registration
             </h1>
-            <p className="text-xs text-[#74796F]">
-              Register to report neighborhood issues and track repair progress
+            <p className="text-xs text-[#77796F]">
+              Register to report neighbourhood issues and track repair progress
             </p>
           </div>
 
           <Card>
             <form onSubmit={handleSubmit}>
               <CardHeader className="space-y-1">
-                <CardTitle className="text-sm">Create Citizen Profile</CardTitle>
+                <CardTitle className="text-base">Create Citizen Profile</CardTitle>
                 <CardDescription>
                   Your details are maintained securely under municipal records
                 </CardDescription>
@@ -224,7 +230,7 @@ export default function RegisterPage() {
 
               <CardContent className="space-y-3">
                 {authError && (
-                  <div className="rounded-md border border-[#F3D8D8] bg-[#FBF0F0] p-2.5 text-xs text-[#9B3B3B] flex items-start gap-2">
+                  <div className="rounded-sm border border-[#E4C9C6] bg-[#F4E8E7] p-2.5 text-xs text-[#8B342E] flex items-start gap-2">
                     <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                     <span className="leading-snug">{authError}</span>
                   </div>
@@ -338,10 +344,10 @@ export default function RegisterPage() {
                 {/* Google Sign-in */}
                 <div className="relative my-2">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-[#E5E8DF]" />
+                    <span className="w-full border-t border-[#DDD9CE]" />
                   </div>
                   <div className="relative flex justify-center text-[10px] uppercase">
-                    <span className="bg-white px-2 text-[#74796F]">
+                    <span className="bg-[#FAF8F2] px-2 text-[#77796F]">
                       or register with
                     </span>
                   </div>
@@ -376,12 +382,12 @@ export default function RegisterPage() {
                 </Button>
               </CardContent>
 
-              <CardFooter className="flex flex-col space-y-2 border-t border-[#E5E8DF] pt-4 text-center">
-                <div className="text-xs text-[#74796F]">
+              <CardFooter className="flex flex-col space-y-2 border-t border-[#DDD9CE] pt-4 text-center">
+                <div className="text-xs text-[#77796F]">
                   Already have an account?{" "}
                   <Link
                     href="/login"
-                    className="font-semibold text-[#536247] hover:underline"
+                    className="font-semibold text-[#1B3A2E] hover:underline"
                   >
                     Sign In
                   </Link>
